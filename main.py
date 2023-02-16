@@ -1,3 +1,4 @@
+import configparser
 import json
 from pysondb import db
 import logging
@@ -110,104 +111,59 @@ class Api:
         f = open('persons.json','w', encoding='utf-8')
         f.write(json.dumps(items,ensure_ascii=False,indent=4))
         f.close()
-        self.database.addMany(items)
+        #self.database.addMany(items)
         logging.info(f'TOTAL {len(items)} persons')
         return items
-
-    '''
-    def _parse_page(self, html):
-        soup = BeautifulSoup(html, features="html.parser")
-        base = soup.find('div', {'id': 'content'}).find('div', {'class': 'wrap'}).find('div', {'id': 'col-1'})
-        links_urls = []
-        ls = base.find_all('a', {'class': 'articles_title'})
-        for link in ls:
-            links_urls.append(self.url + link['href'])
-        return links_urls'''
-
-    '''def get_day_links(self, url: object, use_proxy: object = False) -> object:
-        links_urls = []
-        path = url
-        logging.debug(f'--- page #1')
-        # print(f'--- page #1')
-        r = self._get(path, use_proxy=use_proxy)
-        html = r.content.decode('windows-1251')
-        soup = BeautifulSoup(html, features="html.parser")
-        base = soup.find('div', {'id': 'content'}).find('div', {'class': 'wrap'}).find('div', {'id': 'col-1'})
-        pages = base.find('div', {'class': 'pagenate'})
-        if pages:
-            pages_count = int(pages.text.split(' ')[1].strip('():')) - 1
-        else:
-            pages_count = 0
-        # current_page = 0
-        links_urls = self._parse_page(html)
-        for page in range(1, pages_count):
-            path = url + '?pg=' + str(page)
-            logging.debug(f'--- page #{page + 1}')
-            # print(f'--- page #{page+1}')
-            r = self._get(path, use_proxy=use_proxy)
-            html = r.content.decode('windows-1251')
-            links_urls += self._parse_page(html)
-        return links_urls'''
 
     def parse_person(self, url, use_proxy=False):
         # path = self.url + '/articles/' + url
         path = url
         url = urlparse(path).path.split('/')[-1:][0]
         r = self._get(path, use_proxy=use_proxy)
-        html = r.content.decode('windows-1251')
+        html = r.content.decode('utf-8')
         soup = BeautifulSoup(html, features="html.parser")
-        base = soup.find('div', {'id': 'content'}).find('div', {'class': 'wrap'}).find('div', {'id': 'col-1'})
-
-        return response
-
-
-    def single_threaded_load(self, links, fname_js, use_proxy=False):
-        d = []
-        fl = False
+        profile = soup.find('section', {'id': 'profile'})
+        id = urlparse(url).path.split('/')[-1:][0]
+        fname = f'persons/{id}.json'
         try:
-            f = open(fname_js + '.json', 'r', encoding='utf-8')
-            d = json.loads(f.read())
-            f.close()
-        except Exception as e:
-            logging.debug(e)
-            # print(e)
+            avatar = self.url + profile.find('div',{'class':'avatar'}).find('img')['src']
+        except:
+            avatar = None
+        fio = profile.find('header',{'class':'profile-header'}).text.strip(' \n')
 
+        js = {
+            'person-id':id,
+            'fio':fio,
+            'avatar-url':avatar
+        }
+
+        f = open(fname,'w',encoding='utf-8')
+        f.write(json.dumps(js,ensure_ascii=False,indent=4))
+        f.close()
+
+        return js
+
+
+
+
+    def single_threaded_load(self, links, use_proxy=False):
         for link in links:
-            self.current += 1
-            flag = False
-            for item in d:
-                # print(item['source'])
-                # print(link)
-                if item['source'] == link:
-                    flag = True
-                    # print(f'FLAG! {len(d)}')
-                    # print(d)
-            # print(link)
-            if not flag:
-                try:
-                    resp = self.parse_article(link, use_proxy)
-                    fl = False
-                except Exception as e:
-                    fl = True
-                    logging.debug(e)
-                    # print(e)
-                if not fl:
-                    logging.info(
-                        f'{fname_js} : {links.index(link)} of {len(links)} - TOTAL: {self.current} of {self.total} -=-=-- {resp["source"]}')
-                    # print(f'{fname_js} : {links.index(link)} of {len(links)} - TOTAL: {self.current} of {self.total} -=-=-- {resp["source"]}')
-                    d.append(resp)
-                    time.sleep(0.5)
-                    f = open(fname_js + '.json', 'w', encoding='utf-8')
-                    f.write(json.dumps(d, ensure_ascii=False, indent=4))
-                    f.close()
+            try:
+                d = self.parse_person(link,use_proxy)
+                self.current += 1
+                logging.info(f'UPDATED {self.current} of {self.total} -=- {d["fio"]} ({d["person-id"]}) - {link}')
+            except Exception as e:
+                logging.info(f'{e}')
+                pass
 
-    def multi_threaded_load(self, links, fname_base, threads_count, use_proxy=False):
+
+    def multi_threaded_load(self, links, threads_count, use_proxy=False):
         t_s = []
         tc = threads_count
         logging.info(f'Initial links count:{len(links)}')
         buf = []
         for link in links:
-            p = str(urlparse(link).path.split('/')[-1:][0])+'.html'
+            p = str(urlparse(link).path.split('/')[-1:][0])+'.json'
             if not os.path.exists('pages/'+p):
                 buf.append(link)
         links = buf
@@ -238,7 +194,7 @@ class Api:
 
         for i in range(0, threads_count):
             t_s.append(
-                threading.Thread(target=self.single_threaded_load, args=(l_c[i], fname_base + '-' + str(i), use_proxy,),
+                threading.Thread(target=self.single_threaded_load, args=(l_c[i], use_proxy,),
                                  daemon=True))
         for t in t_s:
             # time.sleep(1)
@@ -259,6 +215,13 @@ class Api:
         f.write(soup.prettify())
         f.close()
 
+    def config_load(self,fname='config.ini'):
+        config = configparser.ConfigParser()
+        config.read(fname)
+        print(config['proxies']['path'])  # -> "/path/name/"
+        config['DEFAULT']['path'] = '/var/shared/'  # update
+        config['DEFAULT']['default_message'] = 'Hey! help me!!'  # create
+
 if __name__ == '__main__':
     a = Api()
     #proxies = ['http://GrandMeg:rTd57fsD@188.191.164.19:9004']
@@ -273,4 +236,17 @@ if __name__ == '__main__':
 
     #logging.info(f'Total links: {len(links)}')
     #a.load_html_to_file('https://rupep.org/ru/persons_list/',use_proxy=True)
-    items = a.get_main_data(True)
+    #items = a.get_main_data(True)
+    f = open('persons.json','r',encoding='utf-8')
+    lines = f.read()
+    f.close()
+    items = json.loads(lines)
+    links = []
+    for item in items:
+        try:
+            links.append(item['person-link'])
+        except:
+            logging.info(f'No link...')
+    logging.info(f'{links[0]}')
+    a.multi_threaded_load(links,50,True)
+
