@@ -125,11 +125,53 @@ class Api:
         profile = soup.find('section', {'id': 'profile'})
         id = urlparse(url).path.split('/')[-1:][0]
         fname = f'persons/{id}.json'
+        person = {
+            'full-name': None
+            'avatar': None,
+            'personal':{
+                'category':None,
+                'tags':[],
+                'birthday':None,
+                'nationality':None,
+                'lives':[],
+                'last-job':{
+                    'company-name':None,
+                    'company-link':None,
+                    'kob-position':None
+                },
+                'social-profiles':[],
+                # 'social-profiles': [
+                #     {
+                #         'name':social media name,
+                #         'link':social profile link,
+                #         'archive-link':link to webarchive,
+                #         'archive-title':custom format of date of webarchive snapshop
+                #     },{},{}...
+                # ]
+                'sites':[]
+                # 'sites': [
+                #     {
+                #         'name':social media name,
+                #         'link':social profile link,
+                #         'archive-link':link to webarchive,
+                #         'archive-title':custom format of date of webarchive snapshop
+                #     },{},{}...
+                # ]
+            }
+        }
         try:
-            avatar = self.url + profile.find('div',{'class':'avatar'}).find('img')['src']
-        except:
-            avatar = None
-        fio = profile.find('header',{'class':'profile-header'}).text.strip(' \n')
+            person['avatar'] = self.url + profile.find('div',{'class':'avatar'}).find('img')['src']
+        except: pass
+        try:
+            person['full-name'] = profile.find('header',{'class':'profile-header'}).text.strip(' \n')
+        except: pass
+        try:
+            personal_trs = profile.find('div',{'id':'personal'}).find('table').find('tbody').find_all('tr')
+        except: personal_trs = []
+        if personal_trs != []:
+            for line in personal_trs:
+                if line.text == 'Категория': line.nextSibling
+
 
         js = {
             'person-id':id,
