@@ -205,11 +205,11 @@ class Api:
             }
         }
         try:
-            person['avatar'] = self.url + profile.find('div', {'class': 'avatar'}).find('img')['src']
+            person.update({'photo-link':self.url + profile.find('div', {'class': 'avatar'}).find('img')['src']})
         except:
             pass
         try:
-            person['full-name'] = profile.find('header', {'class': 'profile-header'}).text.strip(' \n')
+            person.update({'name_ru':profile.find('header', {'class': 'profile-header'}).text.strip(' \n')})
         except:
             pass
 
@@ -235,41 +235,42 @@ class Api:
         if personal_trs is not None:
             for line in personal_trs:
                 if line.find_all('td')[0].text.strip() == 'Категория':
-                    person['personal']['category'] = line.find_all('td')[1].text.strip()
-                elif line.find_all('td')[0].text.strip() == 'Теги персоны':
-                    person['personal']['tags'] = line.find_all('td')[1].text.strip().split('\n')
-                elif line.find_all('td')[0].text.strip() == 'Дата рождения':
-                    person['personal']['birthday'] = line.find_all('td')[1].find('meta')['content'].strip()
+                    person.update({'category':line.find_all('td')[1].text.strip()})
+                # elif line.find_all('td')[0].text.strip() == 'Теги персоны':
+                #     person['personal']['tags'] = line.find_all('td')[1].text.strip().split('\n')
+                if line.find_all('td')[0].text.strip() == 'Дата рождения':
+                    person.update({'birthday':line.find_all('td')[1].find('meta')['content'].strip()})
                 elif line.find_all('td')[0].text.strip() == 'ИНН':
-                    person['personal']['taxID'] = line.find_all('td')[1].text.strip()
+                    person.update({'tax_id':line.find_all('td')[1].text.strip()})
                 elif line.find_all('td')[0].text.strip() == 'Гражданство':
-                    person['personal']['nationality'] = line.find_all('td')[1].text.strip()
+                    person.update({'citizenship':line.find_all('td')[1].text.strip()})
                 elif line.find_all('td')[0].text.strip() == 'Проживает':
                     values = line.find_all('td')[1].text.strip()
                     values = values.replace('\n', '').split(',')
                     for value in values:
                         values[values.index(value)] = value.strip()
-                    person['personal']['lives'] = values
+                    person.update({'lives':','.join(values)})
                 elif line.find_all('td')[0].text.strip() == 'Владеет недвижимостью':
                     values = line.find_all('td')[1].text.strip()
                     values = values.replace('\n', '').split(',')
                     for value in values:
                         values[values.index(value)] = value.strip()
-                    person['personal']['realty-in'] = values
+                    person.update({'realty_in':values})
                 elif line.find_all('td')[0].text.strip() == 'Под санкциями':
                     values = line.find_all('td')[1].text.strip()
                     values = values.replace('\n', '').split(',')
                     for value in values:
                         values[values.index(value)] = value.strip()
-                    person['personal']['sanctions'] = values
+                    person.update({'sanctions':values})
                 elif line.find_all('td')[0].text.strip() == 'Последняя должность':
+
                     last_job = {}
                     last_job['company-name'] = line.find_all('td')[1].find('span', {'itemprop': 'name'}).text.strip()
                     last_job['company-link'] = self.url + line.find_all('td')[1].find('a')['href']
                     last_job['job-position'] = line.find_all('td')[1].find('span',
                                                                            {'itemprop': 'jobTitle'}).text.strip()
-
-                    person['personal']['last-job'] = last_job
+                    person.update({'current_job_ru':last_job['company-name'] +', ' + last_job['job-position']})
+                    #person['personal']['last-job'] = last_job
                 elif line.find_all('td')[0].text.strip() == 'Профили в социальных сетях':
                     items = []
                     items_soup = line.find_all('td')[1].find_all('a',recursive=False)
@@ -287,8 +288,9 @@ class Api:
                                 d['archive-title'] = sib.find('a')['title']
                         except:
                             pass
+                        #items.append()
                         items.append(d)
-                    person['personal']['social-profiles'] = items
+                    person.update({'social_profiles':items})
 
                 elif line.find_all('td')[0].text.strip() == 'Другие вебсайты':
                     items = []
@@ -308,7 +310,7 @@ class Api:
                         except:
                             pass
                         items.append(d)
-                    person['personal']['sites'] = items
+                    person.update({'sites':items})
 
         if workbefore is not None:
             hist = []
