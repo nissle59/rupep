@@ -10,6 +10,7 @@ from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 from html import unescape
 import threading
+from tqdm import tqdm
 
 logging.basicConfig(level=logging.INFO, filename="parser.log", filemode="a",
                     format="%(asctime)s %(levelname)s %(message)s")
@@ -28,6 +29,8 @@ class Api:
     archive_links = []
     total = 0
     current = 0
+    total_comp = 0
+    current_comp = 0
     dbfile = ''
     database = None
     trdict = {
@@ -160,8 +163,95 @@ class Api:
         logging.info(f'TOTAL {len(items)} persons')
         return items
 
+    def find_company_by_name(self,company_name):
+        url = 'https://kycbase.io/parsers/api/companies/?name=' + company_name
+        headers = headers = {
+            'Accept': '*/*',
+            # 'Accept-Encoding':'gzip, deflate, br',
+            # 'Connection': 'keep-alive',
+            'Authorization': 'Token 26b881c992c9b4c0f1b9fe13c9a10cf9c1aacbc1'
+        }
+        r = requests.get(url, headers=headers)
+        try:
+            res = r.json()['results'][0]
+        except:
+            res = {'id': None}
+        return res
+
+    def find_person_by_name(self,person):
+        url = 'https://kycbase.io/parsers/api/persons/?name=' + person
+        headers = headers = {
+            'Accept': '*/*',
+            # 'Accept-Encoding':'gzip, deflate, br',
+            # 'Connection': 'keep-alive',
+            'Authorization': 'Token 26b881c992c9b4c0f1b9fe13c9a10cf9c1aacbc1'
+        }
+        r = requests.get(url, headers=headers)
+        try:
+            res = r.json()['results'][0]
+        except:
+            res = {'id': None}
+        return res
+
+    def upload_company(self, fname: str):
+        url = 'https://kycbase.io/parsers/api/companies/'
+        headers = {
+            'Accept': '*/*',
+            # 'Accept-Encoding':'gzip, deflate, br',
+            # 'Connection': 'keep-alive',
+            'Authorization': 'Token 26b881c992c9b4c0f1b9fe13c9a10cf9c1aacbc1'
+        }
+        f = open(fname, 'r', encoding='utf-8')
+        company = json.loads(f.read())
+        f.close()
+        t_c = self.find_company_by_name(company['name'])
+        if t_c['id'] == None:
+            url = 'https://kycbase.io/parsers/api/companies/'
+            r = requests.post(url, headers=headers, data=company)
+            logging.info(r.text)
+            return r.json()
+        else:
+            url = 'https://kycbase.io/parsers/api/companies/' + str(t_c['id'])
+            for key in t_c:
+                if key != 'id':
+                    if (t_c[key] != '') or (t_c[key] != None) or (t_c[key] != 0):
+                        del company[key]
+            if len(company) > 0:
+                r = requests.patch(url, headers=headers, data=company)
+                logging.info(r.text)
+                return r.json()
+
+    def upload_person(self, fname: str):
+        url = 'https://kycbase.io/parsers/api/companies/'
+        headers = {
+            'Accept': '*/*',
+            # 'Accept-Encoding':'gzip, deflate, br',
+            # 'Connection': 'keep-alive',
+            'Authorization': 'Token 26b881c992c9b4c0f1b9fe13c9a10cf9c1aacbc1'
+        }
+        f = open(fname, 'r', encoding='utf-8')
+        person = json.loads(f.read())
+        f.close()
+        t_c = self.find_person_by_name(person['name_ru'])
+        if t_c['id'] == None:
+            url = 'https://kycbase.io/parsers/api/persons/'
+            r = requests.post(url, headers=headers, data=person)
+            logging.info(r.text)
+            return r.json()
+        else:
+            url = 'https://kycbase.io/parsers/api/persons/' + str(t_c['id'])
+            for key in t_c:
+                if key != 'id':
+                    if (t_c[key] != '') or (t_c[key] != None) or (t_c[key] != 0):
+                        del person[key]
+            if len(person) > 0:
+                r = requests.patch(url, headers=headers, data=person)
+                logging.info(r.text)
+                return r.json()
+
     def parse_person(self, url, use_proxy=False):
         # path = self.url + '/articles/' + url
+        companies_links = []
         path = url
         url = urlparse(path).path.split('/')[-1:][0]
         r = self._get(path, use_proxy=use_proxy)
@@ -170,40 +260,8 @@ class Api:
         profile = soup.find('section', {'id': 'profile'})
         id = urlparse(url).path.split('/')[-1:][0]
         fname = f'persons/{id}.json'
-        person = {
-            'person-id':id,
-            'full-name': None,
-            'avatar': None,
-            'personal': {
-                'category': None,
-                'tags': [],
-                'birthday': None,
-                'taxID': None,
-                'nationality': None,
-                'lives': None,
-                'realty-in': None,
-                'sanctions': None,
-                'last-job': None,
-                'social-profiles': None,
-                # 'social-profiles': [
-                #     {
-                #         'name':social media name,
-                #         'link':social profile link,
-                #         'archive-link':link to webarchive,
-                #         'archive-title':custom format of date of webarchive snapshop
-                #     },{},{}...
-                # ]
-                'sites': None
-                # 'sites': [
-                #     {
-                #         'name':social media name,
-                #         'link':social profile link,
-                #         'archive-link':link to webarchive,
-                #         'archive-title':custom format of date of webarchive snapshop
-                #     },{},{}...
-                # ]
-            }
-        }
+        person = {}
+
         try:
             person.update({'photo-link':self.url + profile.find('div', {'class': 'avatar'}).find('img')['src']})
         except:
@@ -267,6 +325,7 @@ class Api:
                     last_job = {}
                     last_job['company-name'] = line.find_all('td')[1].find('span', {'itemprop': 'name'}).text.strip()
                     last_job['company-link'] = self.url + line.find_all('td')[1].find('a')['href']
+                    companies_links.append(last_job['company-link'])
                     last_job['job-position'] = line.find_all('td')[1].find('span',
                                                                            {'itemprop': 'jobTitle'}).text.strip()
                     person.update({'current_job_ru':last_job['company-name'] +', ' + last_job['job-position']})
@@ -288,7 +347,6 @@ class Api:
                                 d['archive-title'] = sib.find('a')['title']
                         except:
                             pass
-                        #items.append()
                         items.append(d)
                     person.update({'social_profiles':items})
 
@@ -312,7 +370,7 @@ class Api:
                         items.append(d)
                     person.update({'sites':items})
 
-        if workbefore is not None:
+        if not workbefore is None:
             hist = []
             date_from = None
             date_to = None
@@ -321,18 +379,18 @@ class Api:
                 dates = []
                 datestr = place.find('span',{'class':'tl-date'}).text.replace('от','').replace('до','').strip()
                 datestr = datestr.split('\n')
-                #print(datestr)
+
                 for dts in datestr:
                     if dts.strip() != '':
                         dates.append(dts.strip())
                 if len(dates)>0:
                     if len(dates) > 1:
-                        date_from = dates[0].strip()
-                        date_to = dates[1].strip()
+                        date_from = datetime.datetime.strptime(dates[0].strip(),'%d.%m.%Y')
+                        date_to = datetime.datetime.strptime(dates[1].strip(),'%d.%m.%Y')
                     else:
-                        date_from = dates[0].replace('от', '').strip()
+                        date_from = datetime.datetime.strptime(dates[0].replace('от', '').strip(),'%d.%m.%Y')
                         date_to = None
-                #else:
+
 
                 jobname = place.find('div',{'class':'tl-content'})
                 jname_link_ext = jobname.find('a').extract()
@@ -342,27 +400,47 @@ class Api:
                     jobname.find('a').extract()
                 except: pass
                 jname_pos = jobname.text.replace('\n','').strip(' ,')
-                d = {
-                    'start':date_from,
-                    'stop':date_to,
-                    'company-name':jname_name,
-                    'company-link':jname_link,
-                    'job-positiion':jname_pos
-                }
-                hist.append(d)
-            person['workbefore'] = hist
+                company = self.find_company_by_name(jname_name)
+                if (jname_link != None) or (jname_link != ''):
+                    companies_links.append(jname_link)
+                d = {}
+                if date_from != None:
+                    d.update({'start': date_from})
+                if date_to != None:
+                    d.update({'stop': date_to})
+                if (jname_pos != None) or (jname_pos != ''):
+                    d.update({'job_position': jname_pos})
+                if company['id'] != None:
+                    d.update({'company':company['id']})
+                else:
+                    if (jname_link != '') or (jname_link != None):
+                        company = self.parse_company(jname_link)
+                        fname = "companies/" + str(urlparse(jname_link).path.split('/')[-1:][0]) + '.json'
+                        company = self.upload_company(fname)
+                        d.update({'company': company['id']})
 
-        if connections is not None:
+                # d = {
+                #     'start':date_from,
+                #     'stop':date_to,
+                #     'company-name':jname_name,
+                #     'company-link':jname_link,
+                #     'job-positiion':jname_pos
+                # }
+                hist.append(d)
+            person['career_connections'] = hist
+
+        if not connections is None:
             d = {}
+            l = []
             #print(len(connections))
             for t in connections:
                 conn_type = t.find('span').text.replace('\n','').strip().lower()
-                conn_type = self.transliterate(conn_type).replace(' ','-')
+                #conn_type = self.transliterate(conn_type).replace(' ','-')
                 li_s = t.find('ul',{'class':'h'}).find_all('li',{'itemprop':'relatedTo'})
                 if len(li_s) == 0:
                     li_s = t.find('ul',{'class':'h'}).find_all('li', {'itemprop': 'knows'})
 
-                l = []
+
                 for li in li_s:
                     p_url = li.find('a',{'itemprop':'url'}).extract()
                     p_id = p_url['href'].split('/')[-1:][0]
@@ -393,19 +471,31 @@ class Api:
                         p_role = buf.strip(' ,-')
                     else:
                         p_role = p_role.replace('–', '').replace(',', '').strip(' ,-')
-
-                    dd = {
-                        'person-id':p_id,
-                        'name':p_name,
-                        'country':p_country_name,
-                        'birthday':p_birthday_value,
-                        'role':p_role
-                    }
+                    dd = {}
+                    rel_person = self.find_person_by_name(p_name)
+                    dd.update({'category':conn_type})
+                    if (p_role != '') or (p_role != None):
+                        dd.update({'role':p_role})
+                    if rel_person['id'] != None:
+                        dd.update({'person2':rel_person['id']})
+                    else:
+                        if (p_id != '') or (p_id != None):
+                            rel_person = self.parse_person('https://rupep.org/ru/person/'+str(p_id))
+                            fname = "persons/" + p_id + '.json'
+                            rel_person = self.upload_person(fname)
+                            d.update({'person2': rel_person['id']})
+                    # dd = {
+                    #     'person-id':p_id,
+                    #     'name':p_name,
+                    #     'country':p_country_name,
+                    #     'birthday':p_birthday_value,
+                    #     'role':p_role
+                    # }
                     #print(dd)
                     l.append(dd)
                 d.update({conn_type:l})
                 #print(d)
-            person['connections'] = d
+            person['person_connections'] = l
             #person.update({'connections':d})
 
         if companies is not None:
@@ -419,12 +509,12 @@ class Api:
                 for dts in datestr:
                     if dts.strip() != '':
                         dates.append(dts.strip())
-                if len(dates)>0:
+                if len(dates) > 0:
                     if len(dates) > 1:
-                        date_from = dates[0].strip()
-                        date_to = dates[1].strip()
+                        date_from = datetime.datetime.strptime(dates[0].strip(), '%d.%m.%Y')
+                        date_to = datetime.datetime.strptime(dates[1].strip(), '%d.%m.%Y')
                     else:
-                        date_from = dates[0].strip()
+                        date_from = datetime.datetime.strptime(dates[0].replace('от', '').strip(), '%d.%m.%Y')
                         date_to = None
                 cont = place.find('div', {'class': 'tl-content'}).find('div')
                 place = cont.find('a',{'itemprop':'worksFor'}).extract()
@@ -453,26 +543,52 @@ class Api:
                     p_role = buf.strip(' ,-')
                 else:
                     p_role = p_role.replace('–', '').replace(',', '').strip(' ,-')
-                d = {
-                    'start':date_from,
-                    'stop':date_to,
-                    'company-name':place_name,
-                    'company-tax-id':place_tax_id,
-                    'company-link':place_link,
-                    'company-country':p_country_name,
-                    'role':p_role
-                }
+
+                if (place_link != None) or (place_link != ''):
+                    companies_links.append(place_link)
+                d = {}
+                rel_company = self.find_company_by_name(place_name)
+                if date_from != None:
+                    d.update({'start':date_from})
+                if date_to != None:
+                    d.update({'stop':date_to})
+                if (p_role != '') or (p_role != None):
+                    d.update({'role':p_role})
+                if rel_company['id'] != None:
+                    d.update({'company':rel_company['id']})
+                else:
+                    if (place_link != '') or (place_link != None):
+                        rel_company = self.parse_company(place_link)
+                        fname = "companies/" + str(urlparse(place_link).path.split('/')[-1:][0]) + '.json'
+                        rel_company = self.upload_company(fname)
+                        d.update({'company': rel_company['id']})
+                # d = {
+                #     'start':date_from,
+                #     'stop':date_to,
+                #     'company-name':place_name,
+                #     'company-tax-id':place_tax_id,
+                #     'company-link':place_link,
+                #     'company-country':p_country_name,
+                #     'role':p_role
+                # }
                 hist.append(d)
-            person['companies']=hist
+            person['company_connections']=hist
 
 
         if reputation is not None:
             pass
-
+        companies_links = list(set(companies_links))
+        f = open(f'persons/{id}.companies', 'w', encoding='utf-8')
+        for line in companies_links:
+            f.write(f'{line}\n')
+        f.close()
         # -----------------------------------------
         f = open(fname, 'w', encoding='utf-8')
         f.write(json.dumps(person, ensure_ascii=False, indent=4))
         f.close()
+
+        r = self.upload_person(fname)
+        logging.info(r)
 
         return person
 
@@ -485,6 +601,66 @@ class Api:
             except Exception as e:
                 logging.info(f'{link} : {e}')
                 pass
+
+    def single_threaded_load_companies(self, links, use_proxy=False):
+        for link in links:
+            try:
+                d = self.parse_company(link, use_proxy)
+                self.current_comp += 1
+                logging.info(f'UPDATED {self.current_comp} of {self.total_comp} -=- {d["full-name"]} ({d["person-id"]}) - {link}')
+            except Exception as e:
+                logging.info(f'{link} : {e}')
+                pass
+
+    def multi_threaded_load_companies(self, links, threads_count, use_proxy=False):
+        t_s = []
+        tc = threads_count
+        logging.info(f'Initial links count:{len(links)}')
+        buf = []
+        for link in links:
+            p = str(urlparse(link).path.split('/')[-1:][0]) + '.json'
+            if not os.path.exists('pages/' + p):
+                buf.append(link)
+        links = buf
+        self.total_comp = len(links)
+        logging.info(f'Filtered links count:{len(links)}')
+        l_count, l_mod = divmod(len(links), tc)
+
+        mod_flag = False
+        l_mod = len(links) % tc
+        # print(l_mod)
+        if l_mod != 0:
+            mod_flag = True
+            l_mod = len(links) % threads_count
+            if l_mod == 0:
+                tc = threads_count
+                l_count = len(links) // tc
+                mod_flag = False
+            else:
+                tc = threads_count - 1
+                l_count = len(links) // tc
+                mod_flag = True
+
+        l_c = []
+        for i in range(0, threads_count):
+            logging.info(f'{i + 1} of {threads_count}')
+            # print(f'{i+1} of {threads_count}')
+            l_c.append(links[l_count * i:l_count * i + l_count])
+
+        for i in range(0, threads_count):
+            t_s.append(
+                threading.Thread(target=self.single_threaded_load_companies, args=(l_c[i], use_proxy,),
+                                 daemon=True))
+        for t in t_s:
+            # time.sleep(1)
+            t.start()
+            # t.join()
+            logging.info(f'Started thread #{t_s.index(t) + 1} of {len(t_s)} with {len(l_c[t_s.index(t)])} links')
+            # print(f'Started thread #{t_s.index(t)+1} of {len(t_s)} with {len(l_c[t_s.index(t)])} links')
+        for t in t_s:
+            t.join()
+            logging.info(f'Joined thread #{t_s.index(t) + 1} of {len(t_s)} with {len(l_c[t_s.index(t)])} links')
+            # print(f'Joined thread #{t_s.index(t) + 1} of {len(t_s)} with {len(l_c[t_s.index(t)])} links')
 
     def multi_threaded_load(self, links, threads_count, use_proxy=False):
         t_s = []
@@ -551,8 +727,95 @@ class Api:
         config['DEFAULT']['path'] = '/var/shared/'  # update
         config['DEFAULT']['default_message'] = 'Hey! help me!!'  # create
 
+    def get_companies_legacy(self):
+        companies = []
+        for root, dirs, files in os.walk('persons'):
+            fnames = files
+        for fname in tqdm(fnames):
+            f = open(f'persons/{fname}', 'r', encoding='utf-8')
+            js = json.loads(f.read())
+            f.close()
+            try:
+                if js['personal']['last-job']['company-link'].find('https://rupep.org/ru/company/') > -1:
+                    companies.append(js['personal']['last-job']['company-link'])
+            except:
+                pass
+            try:
+                for i in js['workbefore']:
+                    if i['company-link'].find('https://rupep.org/ru/company/') > -1:
+                        companies.append(i['company-link'])
+            except:
+                pass
+            try:
+                for i in js['companies']:
+                    if i['company-link'].find('https://rupep.org/ru/company/') > -1:
+                        companies.append(i['company-link'])
+            except:
+                pass
+        res = list(set(companies))
+        f = open('companies_links.txt','w',encoding='utf-8')
+        for line in res:
+            f.write(f'{line}\n')
+        f.close()
 
-if __name__ == '__main__':
+    def get_companies(self):
+        companies = []
+        for root, dirs, files in os.walk('persons'):
+            fnames = files
+        for fname in tqdm(fnames):
+            if fname.find('.companies') > 0:
+                f = open(f'persons/{fname}', 'r', encoding='utf-8')
+                lst = f.read().split('\n')
+                f.close()
+                companies += lst
+        res = list(set(companies))
+        f = open('companies_links.txt','w',encoding='utf-8')
+        for line in res:
+            f.write(f'{line}\n')
+        f.close()
+
+    def parse_company(self, url, use_proxy=False):
+        path = url
+        url = urlparse(path).path.split('/')[-1:][0]
+        r = self._get(path, use_proxy=use_proxy)
+        html = r.content.decode('utf-8')
+        soup = BeautifulSoup(html, features="html.parser")
+        profile = soup.find('section', {'id': 'profile'})
+        id = urlparse(url).path.split('/')[-1:][0]
+        fname = f'companies/{id}.json'
+        company = {}
+
+        name = profile.find('h1',{'itemprop':'name'}).text.replace('\n','').strip()
+        company.update({'name':name})
+        company_trs = profile.find('table').find_all('tr')
+        if company_trs is not None:
+            for line in company_trs:
+                if line.find_all('td')[0].text.strip() == 'ОГРН':
+                    company.update({'registration_id':line.find_all('td')[1].text.replace('\t','').replace('\n','').replace('\r','').strip()})
+                if line.find_all('td')[0].text.strip() == 'Дата создания':
+                    date_cr = datetime.datetime.strptime(line.find_all('td')[1].text.replace('\t','').replace('\n','').replace('\r','').strip(),'%d.%m.%Y')
+                    company.update({'date_creation':date_cr})
+                if line.find_all('td')[0].text.strip() == 'Зарегистрирован(-а)':
+                    company.update({'country_registration':line.find_all('td')[1].text.replace('\t','').replace('\n','').replace('\r','').strip()})
+                if line.find_all('td')[0].text.strip() == 'Адрес':
+                    company.update({'address_company':line.find_all('td')[1].text.replace('\t','').replace('\n','').replace('\r','').strip()})
+                if len(line.find_all('td')) == 1:
+                    try:
+                        ws = line.find('td').find('a')
+                        if ws.text.strip() == 'Вкбсайт':
+                            company.update({'website':ws['href']})
+                    except:
+                        pass
+
+        f = open(fname, 'w', encoding='utf-8')
+        f.write(json.dumps(company, ensure_ascii=False, indent=4))
+        f.close()
+
+        return company
+
+
+def init():
+    global a
     a = Api()
     # proxies = ['http://GrandMeg:rTd57fsD@188.191.164.19:9004']
     proxies = ['http://s2CLEw:GRH8uA@45.139.171.166:8000']
@@ -562,15 +825,12 @@ if __name__ == '__main__':
             "https": proxy,
             "ftp": proxy
         })
-    DEV = True
+    DEV = False
 
-    # logging.info(f'Total links: {len(links)}')
-    # a.load_html_to_file('https://rupep.org/ru/persons_list/',use_proxy=True)
-    # items = a.get_main_data(True)
-    f = open('persons.json', 'r', encoding='utf-8')
-    lines = f.read()
-    f.close()
-    items = json.loads(lines)
+
+def go_parse():
+    global a
+    items = a.get_main_data(True)
     links = []
     for item in items:
         try:
@@ -579,9 +839,8 @@ if __name__ == '__main__':
             logging.info(f'No link...')
     #logging.info(f'{links[0]}')
     a.multi_threaded_load(links, 50, True)
-    #i = a.parse_person('https://rupep.org/ru/person/4599',True)
-    #print(json.dumps(i,ensure_ascii=False,indent=4))
 
-    #
-
-    #
+if __name__ == '__main__':
+    init()
+    go_parse()
+    #a.get_companies()
