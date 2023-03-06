@@ -19,6 +19,7 @@ logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
 class Api:
     url = 'https://rupep.org'
+    persons_base = {}
     headers = {}
     # img_storage = 'pages/images/'
     # remote_img_storage = 'images/'
@@ -153,7 +154,7 @@ class Api:
                     'en': last_job_en
                 }
             }
-
+            self.persons_base.update({str(id):item})
             items.append(item)
             logging.info(f'PARSED {id}: {fio_ru} / {fio_en} / {birthday}')
         f = open('persons.json', 'w', encoding='utf-8')
@@ -267,7 +268,26 @@ class Api:
         except:
             pass
         try:
-            person.update({'name_ru':profile.find('header', {'class': 'profile-header'}).text.strip(' \n')})
+            name_ru = profile.find('header', {'class': 'profile-header'}).text.strip(' \n')
+            person.update({'name_ru':name_ru})
+            try:
+                person.update({'name1_ru': name_ru.split(' ')[0]})
+                person.update({'name2_ru': name_ru.split(' ')[1]})
+                person.update({'name3_ru': name_ru.split(' ')[2]})
+            except:
+                pass
+        except:
+            pass
+
+        try:
+            name_en = self.persons_base[str(id)]['fio']['en']
+            person.update({'name_en':name_en})
+            try:
+                person.update({'name1_en': name_en.split(' ')[0]})
+                person.update({'name2_en': name_en.split(' ')[1]})
+                person.update({'name3_en': name_en.split(' ')[2]})
+            except:
+                pass
         except:
             pass
 
@@ -818,7 +838,7 @@ def init():
     global a
     a = Api()
     # proxies = ['http://GrandMeg:rTd57fsD@188.191.164.19:9004']
-    proxies = ['http://s2CLEw:GRH8uA@45.139.171.166:8000']
+    proxies = ['http://cusq7Q:gYAfFe@170.83.235.7:8000']
     for proxy in proxies:
         a.proxies.append({
             "http": proxy,
