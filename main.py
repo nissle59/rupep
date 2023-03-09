@@ -12,6 +12,7 @@ from urllib.parse import urlparse
 import requests
 from bs4 import BeautifulSoup
 from tqdm import tqdm
+from tqdm.contrib import tenumerate
 
 logging.basicConfig(level=logging.INFO, filename="parser.log", filemode="a",
                     format="%(asctime)s %(levelname)s %(message)s")
@@ -174,67 +175,105 @@ class Api:
         f.close()
         # self.database.addMany(items)
         logging.info(f'TOTAL {len(items)} persons')
-        # logging.info(f'Sync ids...')
-        # kyc_persons = self.load_kyc_persons()
-        # logging.info(f'Upload data...')
-        # for item in tqdm(items):
-        #     data = {}
-        #     try:
-        #         name_ru = ' '.join(item['fio']['ru'].split(' ')[2:]) + ' ' + item['fio']['ru'].split(' ')[0] + " " + \
-        #                   item['fio']['ru'].split(' ')[1]
-        #         data.update({'name1_ru': name_ru.split(' ')[0]})
-        #         data.update({'name2_ru': name_ru.split(' ')[1]})
-        #         data.update({'name3_ru': name_ru.split(' ')[2]})
-        #         data.update({'name_ru': name_ru})
-        #     except:
-        #         try:
-        #             name_ru = item['fio']['ru'].split(' ')[1] + ' ' + item['fio']['ru'].split(' ')[0]
-        #             data.update({'name1_ru': name_ru.split(' ')[0]})
-        #             data.update({'name2_ru': name_ru.split(' ')[1]})
-        #             data.update({'name_ru': name_ru})
-        #         except:
-        #             name_ru = item['fio']['ru'].strip()
-        #             data.update({'name2_ru': name_ru})
-        #             data.update({'name_ru': name_ru})
-        #     try:
-        #         name_en = ' '.join(item['fio']['en'].split(' ')[2:]) + ' ' + item['fio']['en'].split(' ')[
-        #             0] + " " + \
-        #                   item['fio']['en'].split(' ')[1]
-        #         data.update({'name1_en': name_en.split(' ')[0]})
-        #         data.update({'name2_en': name_en.split(' ')[1]})
-        #         data.update({'name3_en': name_en.split(' ')[2]})
-        #         data.update({'name_en': name_en})
-        #     except:
-        #         try:
-        #             name_en = item['fio']['en'].split(' ')[1] + ' ' + item['fio']['en'].split(' ')[0]
-        #             data.update({'name1_en': name_en.split(' ')[0]})
-        #             data.update({'name2_en': name_en.split(' ')[1]})
-        #             data.update({'name_en': name_en})
-        #         except:
-        #             name_en = item['fio']['en'].strip()
-        #             data.update({'name2_en': name_en})
-        #             data.update({'name_en': name_en})
-        #     if not name_ru.upper() in kyc_persons:
-        #         url = 'https://kycbase.io/parsers/api/persons/'
-        #         headers = {
-        #             'Accept': '*/*',
-        #             # 'Accept-Encoding':'gzip, deflate, br',
-        #             # 'Connection': 'keep-alive',
-        #             'Content-Type': 'application/json',
-        #             'Authorization': 'Token 26b881c992c9b4c0f1b9fe13c9a10cf9c1aacbc1'
-        #         }
-        #         r = requests.post(url, headers=headers, data=json.dumps(data,ensure_ascii=False,indent=4).encode('utf-8'))
-        #         resp = r.json()
-        #         if not(isinstance(resp['name_ru'],list)):
-        #             kyc_persons.update({resp["name_ru"].upper():resp["id"]})
-        #             logging.info(f'ADD: {resp["id"]} - {resp["name_ru"]}')
-        #         else:
-        #             logging.info(f'Person {data["name_ru"]} is alredy exists!!! Have no idea about ID =(')
-        #
-        # self.kyc_persons = kyc_persons
-        # f = open('kyc_persons.json','w',encoding='utf-8')
-        # f.write(json.dumps(kyc_persons,ensure_ascii=False,indent=4))
-        # f.close()
+        logging.info(f'Sync ids...')
+        kyc_persons = self.load_kyc_persons()
+        logging.info(f'Upload data...')
+        limit = 200
+        current = 0
+        lst = []
+        #kyc_txt = json.dumps(kyc_persons,ensure_ascii=False)
+        for idx, item in tenumerate(items, desc='Uploading...'):
+            FLAG = False
+            if current < limit:
+                data = {}
+                try:
+                    name_ru = ' '.join(item['fio']['ru'].split(' ')[2:]) + ' ' + item['fio']['ru'].split(' ')[0] + " " + \
+                              item['fio']['ru'].split(' ')[1]
+                    data.update({'name1_ru': name_ru.split(' ')[0]})
+                    data.update({'name2_ru': name_ru.split(' ')[1]})
+                    data.update({'name3_ru': name_ru.split(' ')[2]})
+                    data.update({'name_ru': name_ru})
+                except:
+                    try:
+                        name_ru = item['fio']['ru'].split(' ')[1] + ' ' + item['fio']['ru'].split(' ')[0]
+                        data.update({'name1_ru': name_ru.split(' ')[0]})
+                        data.update({'name2_ru': name_ru.split(' ')[1]})
+                        data.update({'name_ru': name_ru})
+                    except:
+                        name_ru = item['fio']['ru'].strip()
+                        data.update({'name2_ru': name_ru})
+                        data.update({'name_ru': name_ru})
+                try:
+                    name_en = ' '.join(item['fio']['en'].split(' ')[2:]) + ' ' + item['fio']['en'].split(' ')[
+                        0] + " " + \
+                              item['fio']['en'].split(' ')[1]
+                    data.update({'name1_en': name_en.split(' ')[0]})
+                    data.update({'name2_en': name_en.split(' ')[1]})
+                    data.update({'name3_en': name_en.split(' ')[2]})
+                    data.update({'name_en': name_en})
+                except:
+                    try:
+                        name_en = item['fio']['en'].split(' ')[1] + ' ' + item['fio']['en'].split(' ')[0]
+                        data.update({'name1_en': name_en.split(' ')[0]})
+                        data.update({'name2_en': name_en.split(' ')[1]})
+                        data.update({'name_en': name_en})
+                    except:
+                        name_en = item['fio']['en'].strip()
+                        data.update({'name2_en': name_en})
+                        data.update({'name_en': name_en})
+                # -- CHECK ITEM IN KYC --
+                if data['name_ru'].upper() in kyc_persons:
+                    FLAG = True
+                try:
+                    if data['name_en'].upper() in kyc_persons:
+                        FLAG = True
+                except:
+                    pass
+                # -----------------------
+                if FLAG:
+                    lst.append(data)
+                    current += 1
+            else:
+                current = 0
+                url = 'https://kycbase.io/parsers/api/persons/bulk/'
+                headers = {
+                    'Accept': '*/*',
+                    # 'Accept-Encoding':'gzip, deflate, br',
+                    # 'Connection': 'keep-alive',
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Token 26b881c992c9b4c0f1b9fe13c9a10cf9c1aacbc1'
+                }
+                try:
+                    r = requests.post(url, headers=headers, data=json.dumps(lst,ensure_ascii=False,indent=4).encode('utf-8'))
+                    resp = r.json()
+                    for ind, i in enumerate(resp):
+                        try:
+                            if not(isinstance(i['name_ru'],list)):
+                                kyc_persons.update({i["name_ru"].upper():int(i["id"])})
+                                logging.info(f'ADD: {i["id"]} - {i["name_ru"]}')
+                            else:
+                                kyc_persons.update({lst[ind]["name_ru"].upper(): int(i["name_ru"][0]["id"])})
+                                logging.info(f'Person {lst[ind]["name_ru"]} is alredy exists! ID: {i["name_ru"][0]["id"]}')
+                        except:
+                            try:
+                                name = "name_en"
+                                kyc_persons.update({lst[ind][name].upper(): int(i[name][0]["id"])})
+                                logging.info(f'Person {lst[ind]["name_ru"]} is alredy exists! ID: {i[name][0]["id"]}')
+                            except:
+                                try:
+                                    name = "name_uk"
+                                    kyc_persons.update({lst[ind]["name_ru"].upper(): int(i[name][0]["id"])})
+                                    logging.info(f'Person {lst[ind]["name_ru"]} is alredy exists! ID: {i[name][0]["id"]}')
+                                except:
+                                    LogException()
+                except:
+                    LogException()
+                lst = []
+
+        self.kyc_persons = kyc_persons
+        f = open('kyc_persons.json','w',encoding='utf-8')
+        f.write(json.dumps(kyc_persons,ensure_ascii=False,indent=4))
+        f.close()
 
         return items
 
@@ -255,22 +294,22 @@ class Api:
         limit = 1000
         offset = 0
         ran = round(count / limit) + 1
-        for i in tqdm(range(0, ran), desc='Loading persons'):
+        for i in tqdm(range(0, ran), desc='Loading KYC persons'):
             if DEV and i == 10:
                 break
             path = url + f'?limit={limit}&offset={offset}'
             # print(path)
             try:
-                res = self._get(path, headers=headers).json()['results']
+                res = requests.get(path, headers=headers).json()['results']
                 for k in res:
                     try:
-                        base.update({k['name_ru'].strip().upper(): k['id']})
+                        base.update({k['name_ru'].strip().upper(): int(k['id'])})
                     except:
                         try:
-                            base.update({k['name_en'].strip().upper(): k['id']})
+                            base.update({k['name_en'].strip().upper(): int(k['id'])})
                         except:
                             try:
-                                base.update({k['name_uk'].strip().upper(): k['id']})
+                                base.update({k['name_uk'].strip().upper(): int(k['id'])})
                             except:
                                 pass
             except Exception as e:
@@ -327,18 +366,18 @@ class Api:
             'Content-Type': 'application/json',
             'Authorization': 'Token 26b881c992c9b4c0f1b9fe13c9a10cf9c1aacbc1'
         }
-        print(fnamert)
+        #print(fnamert)
         f = open(fnamert, 'r', encoding='utf-8')
         company = json.loads(f.read())
         f.close()
         t_c = self.find_company_by_name(company['name'])
-        logging.info(t_c)
+        #logging.info(t_c)
         if t_c['id'] == None:
             url = 'https://kycbase.io/parsers/api/companies/'
             company['name'] = company['name'].upper()
             company = json.dumps(company,ensure_ascii=False, indent=4)
             r = requests.post(url, headers=headers, data=company.encode('utf-8'))
-            logging.info(r.text)
+            #logging.info(r.text)
             return r.json()
         else:
             url = 'https://kycbase.io/parsers/api/companies/' + str(t_c['id']) + '/'
@@ -353,10 +392,94 @@ class Api:
                 company['name'] = company['name'].upper()
                 company = json.dumps(company, ensure_ascii=False, indent=4)
                 r = requests.patch(url, headers=headers, data=company.encode('utf-8'))
-                logging.info(r.text)
+                #logging.info(r.text)
                 return r.json()
             else:
                 return t_c
+
+    def upload_persons(self, bulk_dict):
+        url = 'https://kycbase.io/parsers/api/persons/bulk/'
+        headers = {
+            'Accept': '*/*',
+            # 'Accept-Encoding':'gzip, deflate, br',
+            # 'Connection': 'keep-alive',
+            'Content-Type': 'application/json',
+            'Authorization': 'Token 26b881c992c9b4c0f1b9fe13c9a10cf9c1aacbc1'
+        }
+        payload = json.dumps(bulk_dict,ensure_ascii=False,indent=4).encode('utf-8')
+        logging.info(payload.decode('utf-8'))
+        r = requests.post(url, headers=headers, data=payload)
+        added = []
+        exist = []
+        try:
+            logging.info(r.text)
+            result = r.json()
+        except:
+            result = []
+        if result != []:
+            for idx, item in enumerate(result):
+                print(item)
+                if isinstance(item['name_ru'], list):
+                    item_id = int(item['name_ru'][0]['id'])
+                    item_out = bulk_dict[idx]
+                    item_out.update({'id':item_id})
+                    exist.append(item_out)
+                elif isinstance(item["name_ru"], str):
+                    item_out = item
+                    added.append(item_out)
+        out = {
+            'ADDED': added,
+            'EXISTS': exist
+        }
+
+        return out
+
+    def process_uploading_persons(self):
+        files = os.listdir('persons')
+        limit = 100
+        current = 0
+        lst = []
+        buf = []
+        for fname in tqdm(files):
+            if fname.find('.json')>-1:
+                fname = 'persons/'+fname
+                if current < limit:
+                    logging.info(fname)
+                    f = open(fname, 'r', encoding='utf-8')
+                    item = json.loads(f.read())
+                    try:
+                        del item['social_profiles']
+                    except:
+                        pass
+                    try:
+                        for conn in item['person_connections']:
+                            if not('person2' in conn.keys()):
+                                del item['person_connections'][item['person_connections'].index(conn)]
+                    except:
+                        pass
+                    try:
+                        for conn in item['career_connections']:
+                            if not('company' in conn.keys()):
+                                del item['career_connections'][item['career_connections'].index(conn)]
+                    except:
+                        pass
+                    f.close()
+                    lst.append(item)
+                    current += 1
+                else:
+                    #tqdm.write(json.dumps(lst,ensure_ascii=False,indent=4))
+                    self.upload_persons(lst)
+                    current = 0
+                    lst = []
+        try:
+            buf = self.upload_persons(lst)
+            print(json.dumps(buf,ensure_ascii=False,indent=4))
+        except:
+            pass
+
+    def convert_person(self,person):
+        out = {}
+
 
     def upload_person(self, fname: str):
         url = 'https://kycbase.io/parsers/api/persons/'
@@ -404,7 +527,7 @@ class Api:
         try:
             profile = soup.find('section', {'id': 'profile'})
         except Exception as e:
-            logging.info(f'Cant parse {id}: {e}')
+            #logging.info(f'Cant parse {id}: {e}')
             return {}
         fname = f'persons/{id}.json'
         person = {}
@@ -482,7 +605,7 @@ class Api:
 
         # ---------- ОБРАБОТКА БЛОКОВ -------------
         if personal_trs is not None:
-            logging.info(f'{name_ru}: Parsing personsl...')
+            #logging.info(f'{name_ru}: Parsing personsl...')
             for line in personal_trs:
                 if line.find_all('td')[0].text.strip() == 'Категория':
                     person.update({'category': line.find_all('td')[1].text.strip()})
@@ -494,8 +617,9 @@ class Api:
                     try:
                         person.update({'tax_id': line.find_all('td')[1].text.strip()})
                     except Exception as e:
-                        LogException()
-                        logging.info(e)
+                        pass
+                        #LogException()
+                        #logging.info(e)
                 elif line.find_all('td')[0].text.strip() == 'Гражданство':
                     person.update({'citizenship': line.find_all('td')[1].text.strip()})
                 elif line.find_all('td')[0].text.strip() == 'Проживает':
@@ -568,7 +692,7 @@ class Api:
                     person.update({'sites': items})
 
         if not workbefore is None:
-            logging.info(f'{name_ru}: Parsing career_connections...')
+            #logging.info(f'{name_ru}: Parsing career_connections...')
             hist = []
             date_from = None
             date_to = None
@@ -648,12 +772,13 @@ class Api:
                                 company = self.parse_company(jname_link)
                                 fnamec = "companies/" + str(urlparse(jname_link).path.split('/')[-1:][0]) + '.json'
                                 company = self.upload_company(fnamec)
-                                logging.info(company)
+                                #logging.info(company)
                                 d.update({'company': company['id']})
                             else:
                                 continue
                 except:
-                    LogException()
+                    pass
+                    #LogException()
 
                 # d = {
                 #     'start':date_from,
@@ -666,7 +791,7 @@ class Api:
             person['career_connections'] = hist
 
         if not connections is None:
-            logging.info(f'{name_ru}: Parsing personal_connections...')
+            #logging.info(f'{name_ru}: Parsing personal_connections...')
             d = {}
             l = []
             # print(len(connections))
@@ -739,7 +864,7 @@ class Api:
             # person.update({'connections':d})
 
         if companies is not None:
-            logging.info(f'{name_ru}: Parsing company_connections...')
+            #logging.info(f'{name_ru}: Parsing company_connections...')
             hist = []
             date_from = None
             date_to = None
@@ -853,7 +978,7 @@ class Api:
         if reputation is not None:
             pass
         companies_links = list(set(companies_links))
-        logging.info(f'{name_ru}: total {str(len(companies_links))} companies by this person, writing to files...')
+        #logging.info(f'{name_ru}: total {str(len(companies_links))} companies by this person, writing to files...')
         f = open(f'persons/{id}.companies', 'w', encoding='utf-8')
         for line in companies_links:
             f.write(f'{line}\n')
@@ -862,9 +987,9 @@ class Api:
         f = open(fname, 'w', encoding='utf-8')
         f.write(json.dumps(person, ensure_ascii=False, indent=4))
         f.close()
-        logging.info(f'{name_ru}: Uploading person...')
-        r = self.upload_person(fname)
-        logging.info(r)
+        # logging.info(f'{name_ru}: Uploading person...')
+        # r = self.upload_person(fname)
+        # logging.info(r)
 
         return person
 
@@ -873,7 +998,7 @@ class Api:
             try:
                 d = self.parse_person(link, use_proxy)
                 self.current += 1
-                logging.info(f'UPDATED {self.current} of {self.total} -=- {d["full-name"]} ({d["person-id"]}) - {link}')
+                logging.info(f'UPDATED {self.current} of {self.total} -=- {d["name_ru"]} - {link}')
             except Exception as e:
                 logging.info(f'{link} : {e}')
                 LogException()
@@ -1135,10 +1260,11 @@ def go_parse():
     f = open('kyc_persons.json','r',encoding='utf-8')
     a.kyc_persons = json.loads(f.read())
     f.close()
-    a.multi_threaded_load(links, 1, True)
+    a.multi_threaded_load(links, 50, True)
 
 
 if __name__ == '__main__':
     init()
-    go_parse()
+    #go_parse()
     # a.get_companies()
+    a.process_uploading_persons()
