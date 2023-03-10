@@ -7,9 +7,11 @@ import logging
 import os
 import sys
 import threading
+import urllib.parse
 from urllib.parse import urlparse
 
 import requests
+from requests_toolbelt import MultipartEncoder
 from bs4 import BeautifulSoup
 from tqdm import tqdm
 from tqdm.contrib import tenumerate
@@ -341,7 +343,8 @@ class Api:
         return res
 
     def find_person_by_name(self, person):
-        url = 'https://kycbase.io/parsers/api/persons/?name=' + person
+        url = 'https://kycbase.io/parsers/api/persons/?name=' + urllib.parse.quote_plus(person)
+        #print(url)
         headers = headers = {
             'Accept': '*/*',
             # 'Accept-Encoding':'gzip, deflate, br',
@@ -350,12 +353,28 @@ class Api:
             'Authorization': 'Token 26b881c992c9b4c0f1b9fe13c9a10cf9c1aacbc1'
         }
         r = requests.get(url, headers=headers)
+        res_new = []
         try:
-            res = r.json()['results'][0]
+            res_s = r.json()['results']
+            #print(r.text)
+            for res in res_s:
+                try:
+                    if res['name_en'] == person:
+                        #res = {'id': None}
+                        logging.info(f'-- deleting {res["id"]}: {res["name_en"]}')
+                        requests.delete(f'https://kycbase.io/parsers/api/persons/{res["id"]}/', headers=headers)
+                    else:
+                        res_new.append(res)
+                except:
+                    pass
+            if len(res_new)==0:
+                result = {'id': None}
+            else:
+                result = res_new[0]
         except:
             # LogException()
-            res = {'id': None}
-        return res
+            result = {'id': None}
+        return result
 
     def upload_company(self, fnamert: str):
         url = 'https://kycbase.io/parsers/api/companies/'
@@ -381,13 +400,15 @@ class Api:
             return r.json()
         else:
             url = 'https://kycbase.io/parsers/api/companies/' + str(t_c['id']) + '/'
+            bb = company
             for key in t_c:
                 if key != 'id':
-                    if (t_c[key] != '') or (t_c[key] != None) or (t_c[key] != 0):
+                    if (t_c[key] == '') or (t_c[key] == None) or (t_c[key] == 0):
                         try:
-                            del company[key]
+                            del bb[key]
                         except:
                             pass
+            company = bb
             if len(company) > 0:
                 company['name'] = company['name'].upper()
                 company = json.dumps(company, ensure_ascii=False, indent=4)
@@ -407,36 +428,79 @@ class Api:
             'Authorization': 'Token 26b881c992c9b4c0f1b9fe13c9a10cf9c1aacbc1'
         }
         payload = json.dumps(bulk_dict,ensure_ascii=False,indent=4).encode('utf-8')
-        logging.info(payload.decode('utf-8'))
+        #logging.info(payload.decode('utf-8'))
         r = requests.post(url, headers=headers, data=payload)
         added = []
         exist = []
+        #try:
+        res = json.loads(r.text)
+        logging.info(json.dumps(res,ensure_ascii=False,indent=4))
+        print(len(res))
+        #except:
+        #    result = []
         try:
-            logging.info(r.text)
-            result = r.json()
-        except:
-            result = []
-        if result != []:
-            for idx, item in enumerate(result):
+            for item in res:
+                idx = res.index(item)
                 print(item)
-                if isinstance(item['name_ru'], list):
-                    item_id = int(item['name_ru'][0]['id'])
-                    item_out = bulk_dict[idx]
-                    item_out.update({'id':item_id})
-                    exist.append(item_out)
-                elif isinstance(item["name_ru"], str):
-                    item_out = item
-                    added.append(item_out)
+                flag = False
+                try:
+                    if isinstance(item['name_ru'], list):
+                        flag = True
+                        item_id = int(item['name_ru'][0]['id'])
+                        try:
+                            item_out = bulk_dict[idx]
+                            item_out.update({'id':item_id})
+                            exist.append(item_out)
+                        except:
+                            LogException()
+                except: pass
+                try:
+                    if isinstance(item['name_en'], list) and (not(flag)):
+                        flag = True
+                        item_id = int(item['name_en'][0]['id'])
+                        try:
+                            item_out = bulk_dict[idx]
+                            item_out.update({'id': item_id})
+                            exist.append(item_out)
+                        except:
+                            LogException()
+                except:
+                    pass
+                try:
+                    if isinstance(item['name_uk'], list) and (not(flag)):
+                        flag = True
+                        item_id = int(item['name_uk'][0]['id'])
+                        try:
+                            item_out = bulk_dict[idx]
+                            item_out.update({'id': item_id})
+                            exist.append(item_out)
+                        except:
+                            LogException()
+                except: pass
+                if ("name_ru" in item.keys()) and (isinstance(item['name_ru'],str)):
+                    try:
+                        item_out = item
+                        added.append(item_out)
+                    except:
+                        LogException()
+        except:
+            LogException()
         out = {
             'ADDED': added,
             'EXISTS': exist
         }
+        logging.info(f'{len(added)}:{len(exist)}')
+        #try:
+        for item in exist:
+            self.update_person_from_dict(item)
+        #except:
+        #    LogException()
 
         return out
 
     def process_uploading_persons(self):
         files = os.listdir('persons')
-        limit = 100
+        limit = 200
         current = 0
         lst = []
         buf = []
@@ -444,41 +508,157 @@ class Api:
             if fname.find('.json')>-1:
                 fname = 'persons/'+fname
                 if current < limit:
-                    logging.info(fname)
+                    #logging.info(fname)
                     f = open(fname, 'r', encoding='utf-8')
                     item = json.loads(f.read())
+                    logging.info(f'{fname}: {item["name_ru"]}')
+                    if "social_profiles" in item.keys():
+                        buf = []
+                        for k in item['social_profiles']:
+                            try:
+                                buf.append(k['link'])
+                            except: pass
+                        item['social_profiles'] = buf
+                    if "sites" in item.keys():
+                        buf = []
+                        for k in item['sites']:
+                            try:
+                                buf.append(k['link'])
+                            except: pass
+                        item['sites'] = buf
+                    # try:
+                    #     del item['social_profiles']
+                    # except:
+                    #     pass
                     try:
-                        del item['social_profiles']
-                    except:
-                        pass
-                    try:
+                        buf = []
                         for conn in item['person_connections']:
-                            if not('person2' in conn.keys()):
-                                del item['person_connections'][item['person_connections'].index(conn)]
+                            if 'person2' in conn.keys():
+                                buf.append(conn)
+                        item['person_connections'] = buf
                     except:
                         pass
                     try:
+                        buf = []
                         for conn in item['career_connections']:
-                            if not('company' in conn.keys()):
-                                del item['career_connections'][item['career_connections'].index(conn)]
+                            if 'company' in conn.keys():
+                                buf.append(conn)
+                        item['career_connections'] = buf
                     except:
                         pass
+                    try:
+                        buf = []
+                        for conn in item['company_connections']:
+                            if 'company' in conn.keys():
+                                buf.append(conn)
+                        item['company_connections'] = buf
+                    except:
+                        pass
+                    buf = []
+                    f.close()
+                    f = open(fname, 'w', encoding='utf-8')
+                    f.write(json.dumps(item,ensure_ascii=False,indent=4))
                     f.close()
                     lst.append(item)
                     current += 1
+
                 else:
                     #tqdm.write(json.dumps(lst,ensure_ascii=False,indent=4))
-                    self.upload_persons(lst)
+                    buf = self.upload_persons(lst)
+                    #print(json.dumps(buf, ensure_ascii=False, indent=4))
                     current = 0
                     lst = []
         try:
             buf = self.upload_persons(lst)
-            print(json.dumps(buf,ensure_ascii=False,indent=4))
+            #print(json.dumps(buf,ensure_ascii=False,indent=4))
         except:
             pass
 
     def convert_person(self,person):
         out = {}
+
+    def update_person_from_dict(self, person: dict):
+        url = 'https://kycbase.io/parsers/api/persons/'
+        headers = {
+            'Accept': '*/*',
+            # 'Accept-Encoding':'gzip, deflate, br',
+            # 'Connection': 'keep-alive',
+            'Content-Type': 'application/json',
+            'Authorization': 'Token 26b881c992c9b4c0f1b9fe13c9a10cf9c1aacbc1'
+        }
+        # f = open(fname, 'r', encoding='utf-8')
+        # person = json.loads(f.read())
+        # f.close()
+        t_c = self.find_person_by_name(person['name_ru'])
+        # print(t_c)
+        # if t_c['id'] == None:
+        #     url = 'https://kycbase.io/parsers/api/persons/'
+        #     logging.info(f'{person["name_ru"]}: ADD...')
+        #     person = json.dumps(person, ensure_ascii=False, indent=4)
+        #     r = requests.post(url, headers=headers, data=person.encode('utf-8'))
+        #     logging.info(r.text)
+        #     return r.json()
+        # else:
+        per = {}
+        url = 'https://kycbase.io/parsers/api/persons/' + str(person['id']) + '/'
+        for key in person:
+            if key != 'id':
+                if (person[key] != '') or (person[key] != None) or (person[key] != 0):
+                    per.update({key:person[key]})
+        data = None
+        if "photo-link" in per.keys():
+            if per["photo-link"][0] != '/':
+                data = 'IMAGE'
+
+        if len(per) > 0:
+            logging.info(f'{person["name_ru"]}: UPD...')
+            try:
+                del per['photo-link']
+            except:
+                pass
+            p_str = json.dumps(per, ensure_ascii=False, indent=4)
+            # if (person['name_ru'] == 'Щербаков Иван Александрович') or (person['name_ru'] == "Чукова Валентина Владимировна"):
+            #     print(p_str)
+            try:
+                r = requests.patch(url, headers=headers, data=p_str.encode('utf-8'))
+                try:
+                    resp = json.loads(r.text)
+                except:
+                    logging.info("!!!! ERROR 500 !!! ")
+                #print(resp)
+                if (data != None) and ("photo_link" in resp.keys()):
+                    if resp["photo_link"][0] != '/':
+                        img_url = per['photo-link']
+                        ext = urlparse(img_url).path.split('/')[-1:][0].split('.')[-1:][0]
+                        f = open(f'images/avatar.{ext}', 'wb')
+                        try:
+                            rb = self._get(img_url, True)
+                            f.write(rb.content)
+                        except:
+                            LogException()
+                        f.close()
+                        f_name = f'avatar.{ext}'
+                        f_path = 'images/' + f_name
+                        data = {
+                            'file': (f_name, open(f_path, 'rb'))
+                        }
+                        m = MultipartEncoder(data, boundary='WebAppBoundary')
+                        headers_img = {
+                            'Accept': '*/*',
+                            'Connection': 'keep-alive',
+                            'Authorization': 'Token 26b881c992c9b4c0f1b9fe13c9a10cf9c1aacbc1',
+                            'Content-Type': m.content_type
+                        }
+                        r_img = requests.post(url + 'upload_image/', data=m.to_string(), headers=headers_img)
+
+                        logging.info(r_img.json()['photo_link'])
+                        #logging.info(r.text)
+                return r.json()
+            except:
+                LogException()
+
+        else:
+            logging.info(f'PASS')
 
 
     def upload_person(self, fname: str):
@@ -1245,10 +1425,30 @@ def init():
             "ftp": proxy
         })
     DEV = False
+    if not os.path.isdir("companies"):
+        os.mkdir("companies")
+    if not os.path.isdir("persons"):
+        os.mkdir("persons")
+    if not os.path.isdir("images"):
+        os.mkdir("images")
+
+
+def clear_folders(folders: list):
+    for folder in folders:
+        for filename in os.listdir(folder):
+            file_path = os.path.join(folder, filename)
+            try:
+                if os.path.isfile(file_path) or os.path.islink(file_path):
+                    os.unlink(file_path)
+                elif os.path.isdir(file_path):
+                    os.remove(file_path)
+            except Exception as e:
+                print('Failed to delete %s. Reason: %s' % (file_path, e))
 
 
 def go_parse():
     global a
+    clear_folders(['companies','persons','images'])
     items = a.get_main_data(True)
     links = []
     for item in items:
@@ -1265,6 +1465,6 @@ def go_parse():
 
 if __name__ == '__main__':
     init()
-    #go_parse()
+    go_parse()
     # a.get_companies()
     a.process_uploading_persons()
