@@ -16,6 +16,8 @@ from bs4 import BeautifulSoup
 from tqdm import tqdm
 from tqdm.contrib import tenumerate
 
+requests.adapters.DEFAULT_RETRIES = 5
+
 logging.basicConfig(level=logging.INFO, filename="parser.log", filemode="a",
                     format="%(asctime)s %(levelname)s %(message)s")
 logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
@@ -101,7 +103,8 @@ class Api:
 
     def _get(self, url, use_proxy=False):
         if use_proxy:
-            r = requests.get(url=url, headers=self.headers, proxies=self.proxies[self._proxy_iter])
+            print(url)
+            r = requests.get(url=url, headers=self.headers, proxies=self.proxies[self._proxy_iter])#, verify=False)
             if (len(self.proxies) - 1) != self._proxy_iter:
                 self._proxy_iter += 1
             else:
@@ -371,6 +374,7 @@ class Api:
                 result = {'id': None}
             else:
                 result = res_new[0]
+                logging.info(f'found: {result["name_ru"]}')
         except:
             # LogException()
             result = {'id': None}
@@ -576,6 +580,92 @@ class Api:
 
     def convert_person(self,person):
         out = {}
+
+    def add_person_from_dict(self, person: dict):
+        url = 'https://kycbase.io/parsers/api/persons/'
+        headers = {
+            'Accept': '*/*',
+            # 'Accept-Encoding':'gzip, deflate, br',
+            # 'Connection': 'keep-alive',
+            'Content-Type': 'application/json',
+            'Authorization': 'Token 26b881c992c9b4c0f1b9fe13c9a10cf9c1aacbc1'
+        }
+
+        # if t_c['id'] == None:
+        #     url = 'https://kycbase.io/parsers/api/persons/'
+        #     logging.info(f'{person["name_ru"]}: ADD...')
+        #     person = json.dumps(person, ensure_ascii=False, indent=4)
+        #     r = requests.post(url, headers=headers, data=person.encode('utf-8'))
+        #     logging.info(r.text)
+        #     return r.json()
+        # else:
+        per = {}
+        url = 'https://kycbase.io/parsers/api/persons/'
+        for key in person:
+            if key != 'id':
+                if (person[key] != '') or (person[key] != None) or (person[key] != 0):
+                    per.update({key:person[key]})
+        data = None
+        if "photo-link" in per.keys():
+            if per["photo-link"][0] != '/':
+                data = 'IMAGE'
+
+        if len(per) > 0:
+            logging.info(f'{person["name_ru"]}: UPD...')
+            try:
+                del per['photo-link']
+            except:
+                pass
+            try:
+                del per['id']
+            except:
+                pass
+            p_str = json.dumps(per, ensure_ascii=False, indent=4)
+            # if (person['name_ru'] == 'Щербаков Иван Александрович') or (person['name_ru'] == "Чукова Валентина Владимировна"):
+            #     print(p_str)
+            try:
+                r = requests.post(url, headers=headers, data=p_str.encode('utf-8'))
+                resp = {'id':None}
+
+                try:
+                    resp = json.loads(r.text)
+                except:
+                    logging.info("!!!! ERROR 500 !!! ")
+                    logging.info(r.text)
+                #print(resp)
+                if (data != None) and ("photo_link" in resp.keys()):
+                    if resp["photo_link"][0] != '/':
+                        img_url = per['photo-link']
+                        ext = urlparse(img_url).path.split('/')[-1:][0].split('.')[-1:][0]
+                        f = open(f'images/avatar.{ext}', 'wb')
+                        try:
+                            rb = self._get(img_url, True)
+                            f.write(rb.content)
+                        except:
+                            LogException()
+                        f.close()
+                        f_name = f'avatar.{ext}'
+                        f_path = 'images/' + f_name
+                        data = {
+                            'file': (f_name, open(f_path, 'rb'))
+                        }
+                        m = MultipartEncoder(data, boundary='WebAppBoundary')
+                        headers_img = {
+                            'Accept': '*/*',
+                            'Connection': 'keep-alive',
+                            'Authorization': 'Token 26b881c992c9b4c0f1b9fe13c9a10cf9c1aacbc1',
+                            'Content-Type': m.content_type
+                        }
+                        r_img = requests.post(url + str(resp["id"]) + '/upload_image/', data=m.to_string(), headers=headers_img)
+
+                        logging.info(r_img.json()['photo_link'])
+                        #logging.info(r.text)
+                return resp
+            except:
+                LogException()
+
+        else:
+            logging.info(f'PASS')
 
     def update_person_from_dict(self, person: dict):
         url = 'https://kycbase.io/parsers/api/persons/'
@@ -937,38 +1027,38 @@ class Api:
                     if jname_link.find('https://rupep.org/ru/company/') > -1:
                         companies_links.append(jname_link)
                 d = {}
-                if date_from != None:
-                    d.update({'start': date_from.strftime('%Y-%m-%d')})
-                if date_to != None:
-                    d.update({'stop': date_to.strftime('%Y-%m-%d')})
-                if (jname_pos != None) or (jname_pos != ''):
-                    d.update({'job_position': jname_pos})
+
                 try:
                     if company['id'] != None:
                         d.update({'company': company['id']})
+                        if date_from != None:
+                            d.update({'start': date_from.strftime('%Y-%m-%d')})
+                        if date_to != None:
+                            d.update({'stop': date_to.strftime('%Y-%m-%d')})
+                        if (jname_pos != None) or (jname_pos != ''):
+                            d.update({'job_position': jname_pos})
                     else:
                         if (jname_link != '') or (jname_link != None):
                             if jname_link.find('https://rupep.org/ru/company/') > -1:
                                 company = self.parse_company(jname_link)
                                 fnamec = "companies/" + str(urlparse(jname_link).path.split('/')[-1:][0]) + '.json'
                                 company = self.upload_company(fnamec)
-                                #logging.info(company)
                                 d.update({'company': company['id']})
+                                if date_from != None:
+                                    d.update({'start': date_from.strftime('%Y-%m-%d')})
+                                if date_to != None:
+                                    d.update({'stop': date_to.strftime('%Y-%m-%d')})
+                                if (jname_pos != None) or (jname_pos != ''):
+                                    d.update({'job_position': jname_pos})
                             else:
                                 continue
                 except:
                     pass
-                    #LogException()
-
-                # d = {
-                #     'start':date_from,
-                #     'stop':date_to,
-                #     'company-name':jname_name,
-                #     'company-link':jname_link,
-                #     'job-positiion':jname_pos
-                # }
-                hist.append(d)
-            person['career_connections'] = hist
+                if d != {}:
+                    hist.append(d)
+            #person['career_connections'] = hist
+            if len(hist)>0:
+                person.update({'career_connections':hist})
 
         if not connections is None:
             #logging.info(f'{name_ru}: Parsing personal_connections...')
@@ -1018,30 +1108,32 @@ class Api:
                         p_role = p_role.replace('–', '').replace(',', '').strip(' ,-')
                     dd = {}
                     rel_person = self.find_person_by_name(p_name)
-                    dd.update({'category': conn_type})
-                    if (p_role != '') or (p_role != None):
-                        dd.update({'role': p_role})
+
+
                     if rel_person['id'] != None:
                         dd.update({'person2': rel_person['id']})
-                    # else:
-                    #     if (p_id != '') or (p_id != None):
-                    #         rel_person = self.parse_person('https://rupep.org/ru/person/' + str(p_id))
-                    #         fname = "persons/" + p_id + '.json'
-                    #         rel_person = self.upload_person(fname)
-                    #         d.update({'person2': rel_person['id']})
-                    # dd = {
-                    #     'person-id':p_id,
-                    #     'name':p_name,
-                    #     'country':p_country_name,
-                    #     'birthday':p_birthday_value,
-                    #     'role':p_role
-                    # }
-                    # print(dd)
-                    l.append(dd)
+                        dd.update({'category': conn_type})
+                        if (p_role != '') or (p_role != None):
+                            dd.update({'role': p_role})
+                    else:
+                        pname_ru = p_name
+                        pname_en = self.transliterate(p_name).title()
+                        rel_person = self.add_person_from_dict({
+                            "name_ru" : pname_ru,
+                            "name_en" : pname_en
+                        })
+                        if rel_person['id'] != None:
+                            dd.update({'person2': rel_person['id']})
+                            dd.update({'category': conn_type})
+                            if (p_role != '') or (p_role != None):
+                                dd.update({'role': p_role})
+                    if dd != {}:
+                        l.append(dd)
                 d.update({conn_type: l})
-                # print(d)
-            person['person_connections'] = l
-            # person.update({'connections':d})
+
+            #person['person_connections'] = l
+            if len(l)>0:
+                person.update({'person_connections':l})
 
         if companies is not None:
             #logging.info(f'{name_ru}: Parsing company_connections...')
@@ -1129,31 +1221,32 @@ class Api:
                         companies_links.append(place_link)
                 d = {}
                 rel_company = self.find_company_by_name(place_name)
-                if date_from != None:
-                    d.update({'start': date_from.strftime('%Y-%m-%d')})
-                if date_to != None:
-                    d.update({'stop': date_to.strftime('%Y-%m-%d')})
-                if (p_role != '') or (p_role != None):
-                    d.update({'role': p_role})
+
                 if rel_company['id'] != None:
                     d.update({'company': rel_company['id']})
+                    if date_from != None:
+                        d.update({'start': date_from.strftime('%Y-%m-%d')})
+                    if date_to != None:
+                        d.update({'stop': date_to.strftime('%Y-%m-%d')})
+                    if (p_role != '') or (p_role != None):
+                        d.update({'role': p_role})
                 else:
                     if (place_link != '') or (place_link != None):
                         rel_company = self.parse_company(place_link)
                         fname = "companies/" + str(urlparse(place_link).path.split('/')[-1:][0]) + '.json'
                         rel_company = self.upload_company(fname)
                         d.update({'company': rel_company['id']})
-                # d = {
-                #     'start':date_from,
-                #     'stop':date_to,
-                #     'company-name':place_name,
-                #     'company-tax-id':place_tax_id,
-                #     'company-link':place_link,
-                #     'company-country':p_country_name,
-                #     'role':p_role
-                # }
-                hist.append(d)
+                        if date_from != None:
+                            d.update({'start': date_from.strftime('%Y-%m-%d')})
+                        if date_to != None:
+                            d.update({'stop': date_to.strftime('%Y-%m-%d')})
+                        if (p_role != '') or (p_role != None):
+                            d.update({'role': p_role})
+                if d != {}:
+                    hist.append(d)
             person['company_connections'] = hist
+            if len(hist)>0:
+                person.update({'company_connections':hist})
 
         if reputation is not None:
             pass
@@ -1417,7 +1510,10 @@ def init():
     global a
     a = Api()
     # proxies = ['http://GrandMeg:rTd57fsD@188.191.164.19:9004']
-    proxies = ['http://cusq7Q:gYAfFe@170.83.235.7:8000']
+    proxies = []
+    rf = 'https://3FrkKs:J4vEBR@185.183.160.146:8000'
+    usa = 'http://wcQT86:jZ6Z7D@154.30.133.132:8000'
+    proxies.append(usa)
     for proxy in proxies:
         a.proxies.append({
             "http": proxy,
@@ -1456,11 +1552,19 @@ def go_parse():
             links.append(item['person-link'])
         except:
             logging.info(f'No link...')
-    # logging.info(f'{links[0]}')
+    logging.info(f'{links[0]}')
     f = open('kyc_persons.json','r',encoding='utf-8')
     a.kyc_persons = json.loads(f.read())
     f.close()
-    a.multi_threaded_load(links, 50, True)
+    # f = open('persons.json','r',encoding='utf-8')
+    # items = json.loads(f.read())
+    # f.close()
+    # for item in items:
+    #     try:
+    #         links.append(item['person-link'])
+    #     except:
+    #         logging.info(f'No link...')
+    a.multi_threaded_load(links, 10, True)
 
 
 if __name__ == '__main__':
