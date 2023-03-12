@@ -18,7 +18,7 @@ from tqdm.contrib import tenumerate
 
 requests.adapters.DEFAULT_RETRIES = 5
 
-dtnow = datetime.date.today()
+dtnow = datetime.date.today().strftime('%d_%m_%Y')
 logging.basicConfig(level=logging.INFO, filename=f"parser_{dtnow}.log", filemode="a",
                     format="%(asctime)s %(levelname)s %(message)s")
 logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
