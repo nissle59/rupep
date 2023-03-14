@@ -1567,9 +1567,11 @@ class Api:
                                 resp = r.json()
                                 try:
                                     company.update({'company':int(resp['id'])})
-                                    print(str(resp['id']) + ' - ' + company['company-name'])
+                                    tqdm.write(str(resp['id']) + ' - ' + company['company-name'])
+                                    #print(str(resp['id']) + ' - ' + company['company-name'])
                                 except:
-                                    print(str(resp['name'][0]) + ' - ' + company['company-name'])
+                                    tqdm.write(str(resp['name'][0]) + ' - ' + company['company-name'])
+                                    #print(str(resp['name'][0]) + ' - ' + company['company-name'])
                                     company.update({'company': int(resp['name'][0])})
                                 try:
                                     del company['company-name']
