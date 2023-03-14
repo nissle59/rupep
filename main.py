@@ -15,6 +15,7 @@ from requests_toolbelt import MultipartEncoder
 from bs4 import BeautifulSoup
 from tqdm import tqdm
 from tqdm.contrib import tenumerate
+from pathlib import *
 
 requests.adapters.DEFAULT_RETRIES = 5
 
@@ -22,6 +23,19 @@ dtnow = datetime.date.today().strftime('%d_%m_%Y')
 logging.basicConfig(level=logging.INFO, filename=f"parser_{dtnow}.log", filemode="a",
                     format="%(asctime)s %(levelname)s %(message)s")
 logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+
+home_path = Path(__file__)
+persons_path = home_path / 'persons'
+companies_path = home_path / 'companies'
+
+
+def to_json(inp_d):
+    return json.dumps(inp_d,ensure_ascii=False,indent=4)
+
+
+def to_json_file(inp_d, filename):
+    with open(filename,'w',encoding='utf-8') as f:
+        f.write(to_json(inp_d))
 
 
 def LogException():
@@ -188,6 +202,7 @@ class Api:
         current = 0
         lst = []
         #kyc_txt = json.dumps(kyc_persons,ensure_ascii=False)
+
         for idx, item in tenumerate(items, desc='Uploading...'):
             FLAG = False
             if current < limit:
@@ -230,51 +245,64 @@ class Api:
                 # -- CHECK ITEM IN KYC --
                 if data['name_ru'].upper() in kyc_persons:
                     FLAG = True
+                    KYC_NAME = data['name_ru'].upper()
                 try:
                     if data['name_en'].upper() in kyc_persons:
                         FLAG = True
+                        KYC_NAME = data['name_en'].upper()
                 except:
                     pass
                 # -----------------------
+                per_id = str(item['person-id'])
+                item_path = persons_path / per_id
+                item_path.mkdir(exist_ok=True)
+                item_base_file = item_path / f'base_file'
+                item_gid_file = item_path / f'gid'
+                with open(item_base_file, 'w', encoding='utf-8') as f:
+                    f.write(json.dumps(data, ensure_ascii=False, indent=4))
+
                 if FLAG:
                     lst.append(data)
+                    with open(item_gid_file, 'w', encoding='utf-8') as f:
+                        f.write(str(kyc_persons[KYC_NAME]))
                     current += 1
-            else:
-                current = 0
-                url = 'https://kycbase.io/parsers/api/persons/bulk/'
-                headers = {
-                    'Accept': '*/*',
-                    # 'Accept-Encoding':'gzip, deflate, br',
-                    # 'Connection': 'keep-alive',
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Token 26b881c992c9b4c0f1b9fe13c9a10cf9c1aacbc1'
-                }
-                try:
-                    r = requests.post(url, headers=headers, data=json.dumps(lst,ensure_ascii=False,indent=4).encode('utf-8'))
-                    resp = r.json()
-                    for ind, i in enumerate(resp):
-                        try:
-                            if not(isinstance(i['name_ru'],list)):
-                                kyc_persons.update({i["name_ru"].upper():int(i["id"])})
-                                logging.info(f'ADD: {i["id"]} - {i["name_ru"]}')
-                            else:
-                                kyc_persons.update({lst[ind]["name_ru"].upper(): int(i["name_ru"][0]["id"])})
-                                logging.info(f'Person {lst[ind]["name_ru"]} is alredy exists! ID: {i["name_ru"][0]["id"]}')
-                        except:
-                            try:
-                                name = "name_en"
-                                kyc_persons.update({lst[ind][name].upper(): int(i[name][0]["id"])})
-                                logging.info(f'Person {lst[ind]["name_ru"]} is alredy exists! ID: {i[name][0]["id"]}')
-                            except:
-                                try:
-                                    name = "name_uk"
-                                    kyc_persons.update({lst[ind]["name_ru"].upper(): int(i[name][0]["id"])})
-                                    logging.info(f'Person {lst[ind]["name_ru"]} is alredy exists! ID: {i[name][0]["id"]}')
-                                except:
-                                    LogException()
-                except:
-                    LogException()
-                lst = []
+            # else:
+            #     current = 0
+            #     url = 'https://kycbase.io/parsers/api/persons/bulk/'
+            #     headers = {
+            #         'Accept': '*/*',
+            #         # 'Accept-Encoding':'gzip, deflate, br',
+            #         # 'Connection': 'keep-alive',
+            #         'Content-Type': 'application/json',
+            #         'Authorization': 'Token 26b881c992c9b4c0f1b9fe13c9a10cf9c1aacbc1'
+            #     }
+            #     try:
+            #         r = requests.post(url, headers=headers, data=json.dumps(lst,ensure_ascii=False,indent=4).encode('utf-8'))
+            #         resp = r.json()
+            #         for ind, i in enumerate(resp):
+            #             try:
+            #                 if not(isinstance(i['name_ru'],list)):
+            #                     kyc_persons.update({i["name_ru"].upper():int(i["id"])})
+            #                     logging.info(f'ADD: {i["id"]} - {i["name_ru"]}')
+            #                 else:
+            #                     kyc_persons.update({lst[ind]["name_ru"].upper(): int(i["name_ru"][0]["id"])})
+            #                     logging.info(f'Person {lst[ind]["name_ru"]} is alredy exists! ID: {i["name_ru"][0]["id"]}')
+            #             except:
+            #                 try:
+            #                     name = "name_en"
+            #                     kyc_persons.update({lst[ind][name].upper(): int(i[name][0]["id"])})
+            #                     logging.info(f'Person {lst[ind]["name_ru"]} is alredy exists! ID: {i[name][0]["id"]}')
+            #                 except:
+            #                     try:
+            #                         name = "name_uk"
+            #                         kyc_persons.update({lst[ind]["name_ru"].upper(): int(i[name][0]["id"])})
+            #                         logging.info(f'Person {lst[ind]["name_ru"]} is alredy exists! ID: {i[name][0]["id"]}')
+            #                     except:
+            #                         LogException()
+            #     except:
+            #         LogException()
+            #     lst = []
+
 
         self.kyc_persons = kyc_persons
         f = open('kyc_persons.json','w',encoding='utf-8')
@@ -423,12 +451,53 @@ class Api:
             else:
                 return t_c
 
+    def upload_companies(self, bulk_dict):
+        url = 'https://kycbase.io/parsers/api/companies/bulk/'
+        headers = {
+            'Accept': '*/*',
+            'Content-Type': 'application/json',
+            'Authorization': 'Token 26b881c992c9b4c0f1b9fe13c9a10cf9c1aacbc1'
+        }
+        r = requests.post(url, headers=headers, json=bulk_dict)
+        added = []
+        exist = []
+        try:
+            res = r.json()
+            for item in res:
+                idx = res.index(item)
+                #print(item)
+                try:
+                    if isinstance(item['name'], list):
+                        item_id = int(item['name_ru'][0]['id'])
+                        try:
+                            item_out = bulk_dict[idx]
+                            item_out.update({'id':item_id})
+                            exist.append(item_out)
+                        except:
+                            LogException()
+                except: pass
+                if ("name" in item.keys()) and (isinstance(item['name'],str)):
+                    try:
+                        item_out = item
+                        added.append(item_out)
+                    except:
+                        LogException()
+        except:
+            pass
+
+        out = {
+            'ADDED': added,
+            'EXISTS': exist
+        }
+
+        logging.info(f'{len(added)}:{len(exist)}')
+
+        return out
+
     def upload_persons(self, bulk_dict):
         url = 'https://kycbase.io/parsers/api/persons/bulk/'
         headers = {
             'Accept': '*/*',
-            # 'Accept-Encoding':'gzip, deflate, br',
-            # 'Connection': 'keep-alive',
             'Content-Type': 'application/json',
             'Authorization': 'Token 26b881c992c9b4c0f1b9fe13c9a10cf9c1aacbc1'
         }
@@ -503,9 +572,28 @@ class Api:
 
         return out
 
-    def process_uploading_persons(self):
+    def process_uploading_companies(self, limit = 200):
+        files = list(companies_path.rglob('*.json'))
+        current = 0
+        lst = []
+        buf = []
+        for fname in files:
+            if current < limit:
+                with open(fname, 'r', encoding='utf-8') as f:
+                    item = json.loads(f.read())
+                    logging.info(f'{fname}: {item["name"]}')
+                    lst.append(item)
+                    current += 1
+            else:
+                buf = self.upload_persons(lst)
+                current = 0
+                lst = []
+        if len(lst) > 0:
+            buf = self.upload_persons(lst)
+
+    def process_uploading_persons(self, limit = 100):
         files = os.listdir('persons')
-        limit = 200
+        #limit = 200
         current = 0
         lst = []
         buf = []
@@ -785,6 +873,352 @@ class Api:
                 logging.info(r.text)
                 return r.json()
 
+    def parse_career_connections(self, workbefore):
+        # logging.info(f'{name_ru}: Parsing career_connections...')
+        person = {}
+        hist = []
+        date_from = None
+        date_to = None
+        for place in workbefore:
+            d = {}
+            dates = []
+            datestr = place.find('span', {'class': 'tl-date'}).text.replace('от', '').replace('до', '').strip()
+            datestr = datestr.split('\n')
+
+            for dts in datestr:
+                if dts.strip() != '':
+                    dates.append(dts.strip())
+            if len(dates) > 0:
+                if len(dates) > 1:
+                    dt_str = dates[0].strip()
+                    try:
+                        date_from = datetime.datetime.strptime(dt_str, '%d.%m.%Y')
+                    except:
+                        try:
+                            date_from = datetime.datetime.strptime(dt_str, '%%m.%Y')
+                        except:
+                            try:
+                                date_from = datetime.datetime.strptime(dt_str, '%Y')
+                            except:
+                                date_from = None
+                    dt_str = dates[1].strip()
+                    try:
+                        date_to = datetime.datetime.strptime(dt_str, '%d.%m.%Y')
+                    except:
+                        try:
+                            date_to = datetime.datetime.strptime(dt_str, '%%m.%Y')
+                        except:
+                            try:
+                                date_to = datetime.datetime.strptime(dt_str, '%Y')
+                            except:
+                                date_to = None
+                else:
+                    dt_str = dates[0].replace('от', '').strip()
+                    try:
+                        date_from = datetime.datetime.strptime(dt_str, '%d.%m.%Y')
+                    except:
+                        try:
+                            date_from = datetime.datetime.strptime(dt_str, '%%m.%Y')
+                        except:
+                            try:
+                                date_from = datetime.datetime.strptime(dt_str, '%Y')
+                            except:
+                                date_from = None
+                    date_to = None
+
+            jobname = place.find('div', {'class': 'tl-content'})
+            jname_link_ext = jobname.find('a').extract()
+            jname_name = jname_link_ext.find('span', {'itemprop': 'name'}).text.strip()
+            jname_link = self.url + jname_link_ext['href']
+            try:
+                jobname.find('a').extract()
+            except:
+                pass
+            jname_pos = jobname.text.replace('\n', '').strip(' ,')
+            #                company = self.find_company_by_name(jname_name)
+            if (jname_link != None) or (jname_link != ''):
+                if jname_link.find('https://rupep.org/ru/company/') > -1:
+                    d.update({'company-link': jname_link})
+            d = {}
+            try:
+                # ID : 'company'
+                d.update({'company-name': jname_name})
+                if date_from != None:
+                    d.update({'start': date_from.strftime('%Y-%m-%d')})
+                if date_to != None:
+                    d.update({'stop': date_to.strftime('%Y-%m-%d')})
+                if (jname_pos != None) or (jname_pos != ''):
+                    d.update({'job_position': jname_pos})
+            except:
+                pass
+            if d != {}:
+                hist.append(d)
+        # person['career_connections'] = hist
+        if len(hist) > 0:
+            person.update({'career_connections': hist})
+        return person
+
+    def parse_personal_connections(self, connections):
+        # logging.info(f'{name_ru}: Parsing personal_connections...')
+        person = {}
+        d = {}
+        l = []
+        # print(len(connections))
+        for t in connections:
+            conn_type = t.find('span').text.replace('\n', '').strip().lower()
+            # conn_type = self.transliterate(conn_type).replace(' ','-')
+            li_s = t.find('ul', {'class': 'h'}).find_all('li', {'itemprop': 'relatedTo'})
+            if len(li_s) == 0:
+                li_s = t.find('ul', {'class': 'h'}).find_all('li', {'itemprop': 'knows'})
+
+            for li in li_s:
+                p_url = li.find('a', {'itemprop': 'url'}).extract()
+                p_id = p_url['href'].split('/')[-1:][0]
+                p_name = p_url.text.strip(' \n')
+                try:
+                    p_country = li.find('span', {'class': 'flag'}).extract()
+                    p_country_name = p_country['title']
+                except:
+                    p_country_name = None
+                try:
+                    p_birthday = li.find('meta').extract()
+                    p_birthday_value = p_birthday['content'].strip()
+                except:
+                    p_birthday_value = None
+                try:
+                    li.find('a', {'class': 'modalConnectionShow'}).extract()
+                except:
+                    pass
+                try:
+                    li.find('div', {'class': 'modalConnectionBox'}).extract()
+                except:
+                    pass
+                p_role = li.text.strip()
+                # .replace('–', '').replace(',', '')
+                # p_role = li.text.replace('–','').replace(',','').strip()
+                if len(p_role.split('\n')) > 1:
+                    buf = ''
+                    p_role = p_role.split('\n')
+                    for line in p_role:
+                        line = line.replace('–', '').replace(',', '').strip()
+                        if line != '': buf = buf + ', ' + line
+                    p_role = buf.strip(' ,-')
+                else:
+                    p_role = p_role.replace('–', '').replace(',', '').strip(' ,-')
+                dd = {}
+
+                dd.update({'person-lid':str(p_id)})
+                dd.update({'person-link': str(p_url)})
+                #dd.update({'person2': rel_person['id']})
+                dd.update({'category': conn_type})
+                if (p_role != '') or (p_role != None):
+                    dd.update({'role': p_role})
+                if dd != {}:
+                    l.append(dd)
+            d.update({conn_type: l})
+
+        # person['person_connections'] = l
+        if len(l) > 0:
+            person.update({'person_connections': l})
+        return person
+
+    def parse_companies_connections(self, companies):
+        # logging.info(f'{name_ru}: Parsing company_connections...')
+        person = {}
+        hist = []
+        date_from = None
+        date_to = None
+        for place in companies:
+            dates = []
+            datestr = place.find('span', {'class': 'tl-date'}).text.replace('от', '').replace('до', '').strip()
+            datestr = datestr.split('\n')
+            for dts in datestr:
+                if dts.strip() != '':
+                    dates.append(dts.strip())
+            if len(dates) > 0:
+                if len(dates) > 1:
+                    dt_str = dates[0].strip()
+                    try:
+                        date_from = datetime.datetime.strptime(dt_str, '%d.%m.%Y')
+                    except:
+                        try:
+                            date_from = datetime.datetime.strptime(dt_str, '%%m.%Y')
+                        except:
+                            try:
+                                date_from = datetime.datetime.strptime(dt_str, '%Y')
+                            except:
+                                date_from = None
+                    dt_str = dates[1].strip()
+                    try:
+                        date_to = datetime.datetime.strptime(dt_str, '%d.%m.%Y')
+                    except:
+                        try:
+                            date_to = datetime.datetime.strptime(dt_str, '%%m.%Y')
+                        except:
+                            try:
+                                date_to = datetime.datetime.strptime(dt_str, '%Y')
+                            except:
+                                date_to = None
+                else:
+                    dt_str = dates[0].replace('от', '').strip()
+                    try:
+                        date_from = datetime.datetime.strptime(dt_str, '%d.%m.%Y')
+                    except:
+                        try:
+                            date_from = datetime.datetime.strptime(dt_str, '%%m.%Y')
+                        except:
+                            try:
+                                date_from = datetime.datetime.strptime(dt_str, '%Y')
+                            except:
+                                date_from = None
+                    date_to = None
+            d = {}
+            cont = place.find('div', {'class': 'tl-content'}).find('div')
+            place = cont.find('a', {'itemprop': 'worksFor'}).extract()
+            place_name = place.find('span', {'itemprop': 'name'}).text.strip()
+            place_link = self.url + place['href']
+            try:
+                place_tax_id = place.find('span', {'itemprop': 'taxID'}).text.strip()
+                d.update({'company-taxid': place_tax_id})
+            except:
+                place_tax_id = None
+            try:
+                p_country = cont.find('span').extract()
+                p_country_name = p_country['title']
+            except:
+                p_country_name = None
+            try:
+                cont.find('a', {'class': 'modalConnectionShow'}).extract()
+            except:
+                pass
+            try:
+                cont.find('div', {'class': 'modalConnectionBox'}).extract()
+            except:
+                pass
+            p_role = cont.text.strip(' ,')
+            if len(p_role.split('\n')) > 1:
+                buf = ''
+                p_role = p_role.split('\n')
+                for line in p_role:
+                    line = line.replace('–', '').replace(',', '').strip()
+                    if line != '': buf = buf + ', ' + line
+                p_role = buf.strip(' ,-')
+            else:
+                p_role = p_role.replace('–', '').replace(',', '').strip(' ,-')
+
+            # if (place_link != None) or (place_link != ''):
+            #     if place_link.find('https://rupep.org/ru/company/') > -1:
+            #         companies_links.append(place_link)
+
+            #rel_company = self.find_company_by_name(place_name)
+
+            #if rel_company['id'] != None:
+            #d.update({'company': rel_company['id']})
+            d.update({'company-name': place_name})
+            d.update({'company-link': place_link})
+            if date_from != None:
+                d.update({'start': date_from.strftime('%Y-%m-%d')})
+            if date_to != None:
+                d.update({'stop': date_to.strftime('%Y-%m-%d')})
+            if (p_role != '') or (p_role != None):
+                d.update({'role': p_role})
+
+            if d != {}:
+                hist.append(d)
+        #person['company_connections'] = hist
+        if len(hist) > 0:
+            person.update({'company_connections': hist})
+        return person
+
+    def parse_personal(self,personal_trs):
+        person = {}
+        # logging.info(f'{name_ru}: Parsing personsl...')
+        for line in personal_trs:
+            if line.find_all('td')[0].text.strip() == 'Категория':
+                person.update({'category': line.find_all('td')[1].text.strip()})
+            # elif line.find_all('td')[0].text.strip() == 'Теги персоны':
+            #     person['personal']['tags'] = line.find_all('td')[1].text.strip().split('\n')
+            if line.find_all('td')[0].text.strip() == 'Дата рождения':
+                person.update({'birthday': line.find_all('td')[1].find('meta')['content'].strip()})
+            elif line.find_all('td')[0].text.strip() == 'ИНН':
+                try:
+                    person.update({'tax_id': line.find_all('td')[1].text.strip()})
+                except Exception as e:
+                    pass
+                    # LogException()
+                    # logging.info(e)
+            elif line.find_all('td')[0].text.strip() == 'Гражданство':
+                person.update({'citizenship': line.find_all('td')[1].text.strip()})
+            elif line.find_all('td')[0].text.strip() == 'Проживает':
+                values = line.find_all('td')[1].text.strip()
+                values = values.replace('\n', '').split(',')
+                for value in values:
+                    values[values.index(value)] = value.strip()
+                person.update({'lives': ','.join(values)})
+            elif line.find_all('td')[0].text.strip() == 'Владеет недвижимостью':
+                values = line.find_all('td')[1].text.strip()
+                values = values.replace('\n', '').split(',')
+                for value in values:
+                    values[values.index(value)] = value.strip()
+                person.update({'realty_in': values})
+            elif line.find_all('td')[0].text.strip() == 'Под санкциями':
+                values = line.find_all('td')[1].text.strip()
+                values = values.replace('\n', '').split(',')
+                for value in values:
+                    values[values.index(value)] = value.strip()
+                person.update({'sanctions': values})
+            elif line.find_all('td')[0].text.strip() == 'Последняя должность':
+
+                last_job = {}
+                last_job['company-name'] = line.find_all('td')[1].find('span', {'itemprop': 'name'}).text.strip()
+                last_job['company-link'] = self.url + line.find_all('td')[1].find('a')['href']
+                # if last_job['company-link'].find('https://rupep.org/ru/company/') > -1:
+                #     companies_links.append(last_job['company-link'])
+                last_job['job-position'] = line.find_all('td')[1].find('span',
+                                                                       {'itemprop': 'jobTitle'}).text.strip()
+                person.update({'current_job_ru': last_job['company-name'] + ', ' + last_job['job-position']})
+                # person['personal']['last-job'] = last_job
+            elif line.find_all('td')[0].text.strip() == 'Профили в социальных сетях':
+                items = []
+                items_soup = line.find_all('td')[1].find_all('a', recursive=False)
+                for item in items_soup:
+                    d = {
+                        'archive-link': None,
+                        'archive-title': None,
+                        'name': item.text.strip(),
+                        'link': item['href']
+                    }
+                    try:
+                        sib = item.find_next_sibling()
+                        if sib.get_attribute_list('class')[0] == 'archived_proof':
+                            d['archive-link'] = sib.find('a')['href']
+                            d['archive-title'] = sib.find('a')['title']
+                    except:
+                        pass
+                    items.append(d)
+                person.update({'social_profiles': items})
+
+            elif line.find_all('td')[0].text.strip() == 'Другие вебсайты':
+                items = []
+                items_soup = line.find_all('td')[1].find_all('a', recursive=False)
+                for item in items_soup:
+                    d = {
+                        'archive-link': None,
+                        'archive-title': None,
+                        'name': item.text.strip(),
+                        'link': item['href']
+                    }
+                    try:
+                        sib = item.find_next_sibling()
+                        if sib.get_attribute_list('class')[0] == 'archived_proof':
+                            d['archive-link'] = sib.find('a')['href']
+                            d['archive-title'] = sib.find('a')['title']
+                    except:
+                        pass
+                    items.append(d)
+                person.update({'sites': items})
+        return person
+
     def parse_person(self, url, use_proxy=False):
         # path = self.url + '/articles/' + url
         companies_links = []
@@ -800,11 +1234,23 @@ class Api:
         except Exception as e:
             #logging.info(f'Cant parse {id}: {e}')
             return {}
-        fname = f'persons/{id}.json'
+        #fname = f'persons/{id}.json'
+        fname = persons_path / str(id) / 'full_init'
+        base_item_path = persons_path / str(id) / 'base_file'
         person = {}
 
         try:
-            person.update({'photo-link': self.url + profile.find('div', {'class': 'avatar'}).find('img')['src']})
+            ava_url = self.url + profile.find('div', {'class': 'avatar'}).find('img')['src']
+            person.update({'photo-link': ava_url})
+
+            ext = urlparse(ava_url).path.split('/')[-1:][0].split('.')[-1:][0]
+            ava_file = persons_path / str(id) / f'avatar.{ext}'
+            try:
+                r = self._get(ava_url)
+                with open(ava_file, 'wb') as f:
+                    f.write(r.content)
+            except:
+                pass
         except:
             pass
         try:
@@ -847,423 +1293,36 @@ class Api:
         # -- Общая информация
         try:
             personal_trs = profile.find('div', {'id': 'personal'}).find('table').find_all('tr')
+            person.update(self.parse_personal(personal_trs))
+            base_d = person
+
+            with open(base_item_path, 'w', encoding='utf-8') as f:
+                f.write(json.dumps(base_d, ensure_ascii=False, indent=4))
         except:
-            personal_trs = None
+            LogException()
+
         # -- Карьера
         try:
             workbefore = profile.find('div', {'id': 'workbefore'}).find('ul', {'class': 'timeline'}).find_all('li', {
                 'class': 'tl-item'})
-        except:
-            workbefore = None
-        # -- Связи
+            person.update(self.parse_career_connections(workbefore))
+        except: pass
+
+        # -- Персональные cвязи
         try:
             connections = profile.find('div', {'id': 'connections'}).find('ul').find('li').find('ul').find_all('li',
                                                                                                                recursive=False)
-        except:
-            connections = None
+            person.update(self.parse_personal_connections(connections))
+        except: pass
+
         # -- Связанные юридические лица
         try:
             companies = profile.find('div', {'id': 'related-companies'}).find('ul', {'class': 'timeline'}).find_all(
                 'li')
-        except:
-            companies = None
-        # -- Уголовные производства и санкции
-        try:
-            reputation = profile.find('div', {'id': 'reputation'}).find('div', {'class': 'printWrap'})
-        except:
-            reputation = None
-        # --------------------------------------
+            person.update(self.parse_companies_connections(companies))
+        except: pass
 
-        # ---------- ОБРАБОТКА БЛОКОВ -------------
-        if personal_trs is not None:
-            #logging.info(f'{name_ru}: Parsing personsl...')
-            for line in personal_trs:
-                if line.find_all('td')[0].text.strip() == 'Категория':
-                    person.update({'category': line.find_all('td')[1].text.strip()})
-                # elif line.find_all('td')[0].text.strip() == 'Теги персоны':
-                #     person['personal']['tags'] = line.find_all('td')[1].text.strip().split('\n')
-                if line.find_all('td')[0].text.strip() == 'Дата рождения':
-                    person.update({'birthday': line.find_all('td')[1].find('meta')['content'].strip()})
-                elif line.find_all('td')[0].text.strip() == 'ИНН':
-                    try:
-                        person.update({'tax_id': line.find_all('td')[1].text.strip()})
-                    except Exception as e:
-                        pass
-                        #LogException()
-                        #logging.info(e)
-                elif line.find_all('td')[0].text.strip() == 'Гражданство':
-                    person.update({'citizenship': line.find_all('td')[1].text.strip()})
-                elif line.find_all('td')[0].text.strip() == 'Проживает':
-                    values = line.find_all('td')[1].text.strip()
-                    values = values.replace('\n', '').split(',')
-                    for value in values:
-                        values[values.index(value)] = value.strip()
-                    person.update({'lives': ','.join(values)})
-                elif line.find_all('td')[0].text.strip() == 'Владеет недвижимостью':
-                    values = line.find_all('td')[1].text.strip()
-                    values = values.replace('\n', '').split(',')
-                    for value in values:
-                        values[values.index(value)] = value.strip()
-                    person.update({'realty_in': values})
-                elif line.find_all('td')[0].text.strip() == 'Под санкциями':
-                    values = line.find_all('td')[1].text.strip()
-                    values = values.replace('\n', '').split(',')
-                    for value in values:
-                        values[values.index(value)] = value.strip()
-                    person.update({'sanctions': values})
-                elif line.find_all('td')[0].text.strip() == 'Последняя должность':
-
-                    last_job = {}
-                    last_job['company-name'] = line.find_all('td')[1].find('span', {'itemprop': 'name'}).text.strip()
-                    last_job['company-link'] = self.url + line.find_all('td')[1].find('a')['href']
-                    if last_job['company-link'].find('https://rupep.org/ru/company/') > -1:
-                        companies_links.append(last_job['company-link'])
-                    last_job['job-position'] = line.find_all('td')[1].find('span',
-                                                                           {'itemprop': 'jobTitle'}).text.strip()
-                    person.update({'current_job_ru': last_job['company-name'] + ', ' + last_job['job-position']})
-                    # person['personal']['last-job'] = last_job
-                elif line.find_all('td')[0].text.strip() == 'Профили в социальных сетях':
-                    items = []
-                    items_soup = line.find_all('td')[1].find_all('a', recursive=False)
-                    for item in items_soup:
-                        d = {
-                            'archive-link': None,
-                            'archive-title': None,
-                            'name': item.text.strip(),
-                            'link': item['href']
-                        }
-                        try:
-                            sib = item.find_next_sibling()
-                            if sib.get_attribute_list('class')[0] == 'archived_proof':
-                                d['archive-link'] = sib.find('a')['href']
-                                d['archive-title'] = sib.find('a')['title']
-                        except:
-                            pass
-                        items.append(d)
-                    person.update({'social_profiles': items})
-
-                elif line.find_all('td')[0].text.strip() == 'Другие вебсайты':
-                    items = []
-                    items_soup = line.find_all('td')[1].find_all('a', recursive=False)
-                    for item in items_soup:
-                        d = {
-                            'archive-link': None,
-                            'archive-title': None,
-                            'name': item.text.strip(),
-                            'link': item['href']
-                        }
-                        try:
-                            sib = item.find_next_sibling()
-                            if sib.get_attribute_list('class')[0] == 'archived_proof':
-                                d['archive-link'] = sib.find('a')['href']
-                                d['archive-title'] = sib.find('a')['title']
-                        except:
-                            pass
-                        items.append(d)
-                    person.update({'sites': items})
-
-        if not workbefore is None:
-            #logging.info(f'{name_ru}: Parsing career_connections...')
-            hist = []
-            date_from = None
-            date_to = None
-            for place in workbefore:
-                d = {}
-                dates = []
-                datestr = place.find('span', {'class': 'tl-date'}).text.replace('от', '').replace('до', '').strip()
-                datestr = datestr.split('\n')
-
-                for dts in datestr:
-                    if dts.strip() != '':
-                        dates.append(dts.strip())
-                if len(dates) > 0:
-                    if len(dates) > 1:
-                        dt_str = dates[0].strip()
-                        try:
-                            date_from = datetime.datetime.strptime(dt_str, '%d.%m.%Y')
-                        except:
-                            try:
-                                date_from = datetime.datetime.strptime(dt_str, '%%m.%Y')
-                            except:
-                                try:
-                                    date_from = datetime.datetime.strptime(dt_str, '%Y')
-                                except:
-                                    date_from = None
-                        dt_str = dates[1].strip()
-                        try:
-                            date_to = datetime.datetime.strptime(dt_str, '%d.%m.%Y')
-                        except:
-                            try:
-                                date_to = datetime.datetime.strptime(dt_str, '%%m.%Y')
-                            except:
-                                try:
-                                    date_to = datetime.datetime.strptime(dt_str, '%Y')
-                                except:
-                                    date_to = None
-                    else:
-                        dt_str = dates[0].replace('от', '').strip()
-                        try:
-                            date_from = datetime.datetime.strptime(dt_str, '%d.%m.%Y')
-                        except:
-                            try:
-                                date_from = datetime.datetime.strptime(dt_str, '%%m.%Y')
-                            except:
-                                try:
-                                    date_from = datetime.datetime.strptime(dt_str, '%Y')
-                                except:
-                                    date_from = None
-                        date_to = None
-
-                jobname = place.find('div', {'class': 'tl-content'})
-                jname_link_ext = jobname.find('a').extract()
-                jname_name = jname_link_ext.find('span', {'itemprop': 'name'}).text.strip()
-                jname_link = self.url + jname_link_ext['href']
-                try:
-                    jobname.find('a').extract()
-                except:
-                    pass
-                jname_pos = jobname.text.replace('\n', '').strip(' ,')
-                company = self.find_company_by_name(jname_name)
-                if (jname_link != None) or (jname_link != ''):
-                    if jname_link.find('https://rupep.org/ru/company/') > -1:
-                        companies_links.append(jname_link)
-                d = {}
-
-                try:
-                    if company['id'] != None:
-                        d.update({'company': company['id']})
-                        if date_from != None:
-                            d.update({'start': date_from.strftime('%Y-%m-%d')})
-                        if date_to != None:
-                            d.update({'stop': date_to.strftime('%Y-%m-%d')})
-                        if (jname_pos != None) or (jname_pos != ''):
-                            d.update({'job_position': jname_pos})
-                    else:
-                        if (jname_link != '') or (jname_link != None):
-                            if jname_link.find('https://rupep.org/ru/company/') > -1:
-                                company = self.parse_company(jname_link)
-                                fnamec = "companies/" + str(urlparse(jname_link).path.split('/')[-1:][0]) + '.json'
-                                company = self.upload_company(fnamec)
-                                d.update({'company': company['id']})
-                                if date_from != None:
-                                    d.update({'start': date_from.strftime('%Y-%m-%d')})
-                                if date_to != None:
-                                    d.update({'stop': date_to.strftime('%Y-%m-%d')})
-                                if (jname_pos != None) or (jname_pos != ''):
-                                    d.update({'job_position': jname_pos})
-                            else:
-                                continue
-                except:
-                    pass
-                if d != {}:
-                    hist.append(d)
-            #person['career_connections'] = hist
-            if len(hist)>0:
-                person.update({'career_connections':hist})
-
-        if not connections is None:
-            #logging.info(f'{name_ru}: Parsing personal_connections...')
-            d = {}
-            l = []
-            # print(len(connections))
-            for t in connections:
-                conn_type = t.find('span').text.replace('\n', '').strip().lower()
-                # conn_type = self.transliterate(conn_type).replace(' ','-')
-                li_s = t.find('ul', {'class': 'h'}).find_all('li', {'itemprop': 'relatedTo'})
-                if len(li_s) == 0:
-                    li_s = t.find('ul', {'class': 'h'}).find_all('li', {'itemprop': 'knows'})
-
-                for li in li_s:
-                    p_url = li.find('a', {'itemprop': 'url'}).extract()
-                    p_id = p_url['href'].split('/')[-1:][0]
-                    p_name = p_url.text.strip(' \n')
-                    try:
-                        p_country = li.find('span', {'class': 'flag'}).extract()
-                        p_country_name = p_country['title']
-                    except:
-                        p_country_name = None
-                    try:
-                        p_birthday = li.find('meta').extract()
-                        p_birthday_value = p_birthday['content'].strip()
-                    except:
-                        p_birthday_value = None
-                    try:
-                        li.find('a', {'class': 'modalConnectionShow'}).extract()
-                    except:
-                        pass
-                    try:
-                        li.find('div', {'class': 'modalConnectionBox'}).extract()
-                    except:
-                        pass
-                    p_role = li.text.strip()
-                    # .replace('–', '').replace(',', '')
-                    # p_role = li.text.replace('–','').replace(',','').strip()
-                    if len(p_role.split('\n')) > 1:
-                        buf = ''
-                        p_role = p_role.split('\n')
-                        for line in p_role:
-                            line = line.replace('–', '').replace(',', '').strip()
-                            if line != '': buf = buf + ', ' + line
-                        p_role = buf.strip(' ,-')
-                    else:
-                        p_role = p_role.replace('–', '').replace(',', '').strip(' ,-')
-                    dd = {}
-                    rel_person = self.find_person_by_name(p_name)
-
-
-                    if rel_person['id'] != None:
-                        dd.update({'person2': rel_person['id']})
-                        dd.update({'category': conn_type})
-                        if (p_role != '') or (p_role != None):
-                            dd.update({'role': p_role})
-                    else:
-                        pname_ru = p_name
-                        pname_en = self.transliterate(p_name).title()
-                        rel_person = self.add_person_from_dict({
-                            "name_ru" : pname_ru,
-                            "name_en" : pname_en
-                        })
-                        if rel_person['id'] != None:
-                            dd.update({'person2': rel_person['id']})
-                            dd.update({'category': conn_type})
-                            if (p_role != '') or (p_role != None):
-                                dd.update({'role': p_role})
-                    if dd != {}:
-                        l.append(dd)
-                d.update({conn_type: l})
-
-            #person['person_connections'] = l
-            if len(l)>0:
-                person.update({'person_connections':l})
-
-        if companies is not None:
-            #logging.info(f'{name_ru}: Parsing company_connections...')
-            hist = []
-            date_from = None
-            date_to = None
-            for place in companies:
-                dates = []
-                datestr = place.find('span', {'class': 'tl-date'}).text.replace('от', '').replace('до', '').strip()
-                datestr = datestr.split('\n')
-                for dts in datestr:
-                    if dts.strip() != '':
-                        dates.append(dts.strip())
-                if len(dates) > 0:
-                    if len(dates) > 1:
-                        dt_str = dates[0].strip()
-                        try:
-                            date_from = datetime.datetime.strptime(dt_str, '%d.%m.%Y')
-                        except:
-                            try:
-                                date_from = datetime.datetime.strptime(dt_str, '%%m.%Y')
-                            except:
-                                try:
-                                    date_from = datetime.datetime.strptime(dt_str, '%Y')
-                                except:
-                                    date_from = None
-                        dt_str = dates[1].strip()
-                        try:
-                            date_to = datetime.datetime.strptime(dt_str, '%d.%m.%Y')
-                        except:
-                            try:
-                                date_to = datetime.datetime.strptime(dt_str, '%%m.%Y')
-                            except:
-                                try:
-                                    date_to = datetime.datetime.strptime(dt_str, '%Y')
-                                except:
-                                    date_to = None
-                    else:
-                        dt_str = dates[0].replace('от', '').strip()
-                        try:
-                            date_from = datetime.datetime.strptime(dt_str, '%d.%m.%Y')
-                        except:
-                            try:
-                                date_from = datetime.datetime.strptime(dt_str, '%%m.%Y')
-                            except:
-                                try:
-                                    date_from = datetime.datetime.strptime(dt_str, '%Y')
-                                except:
-                                    date_from = None
-                        date_to = None
-                cont = place.find('div', {'class': 'tl-content'}).find('div')
-                place = cont.find('a', {'itemprop': 'worksFor'}).extract()
-                place_name = place.find('span', {'itemprop': 'name'}).text.strip()
-                place_link = self.url + place['href']
-                try:
-                    place_tax_id = place.find('span', {'itemprop': 'taxID'}).text.strip()
-                except:
-                    place_tax_id = None
-                try:
-                    p_country = cont.find('span').extract()
-                    p_country_name = p_country['title']
-                except:
-                    p_country_name = None
-                try:
-                    cont.find('a', {'class': 'modalConnectionShow'}).extract()
-                except:
-                    pass
-                try:
-                    cont.find('div', {'class': 'modalConnectionBox'}).extract()
-                except:
-                    pass
-                p_role = cont.text.strip(' ,')
-                if len(p_role.split('\n')) > 1:
-                    buf = ''
-                    p_role = p_role.split('\n')
-                    for line in p_role:
-                        line = line.replace('–', '').replace(',', '').strip()
-                        if line != '': buf = buf + ', ' + line
-                    p_role = buf.strip(' ,-')
-                else:
-                    p_role = p_role.replace('–', '').replace(',', '').strip(' ,-')
-
-                if (place_link != None) or (place_link != ''):
-                    if place_link.find('https://rupep.org/ru/company/') > -1:
-                        companies_links.append(place_link)
-                d = {}
-                rel_company = self.find_company_by_name(place_name)
-
-                if rel_company['id'] != None:
-                    d.update({'company': rel_company['id']})
-                    if date_from != None:
-                        d.update({'start': date_from.strftime('%Y-%m-%d')})
-                    if date_to != None:
-                        d.update({'stop': date_to.strftime('%Y-%m-%d')})
-                    if (p_role != '') or (p_role != None):
-                        d.update({'role': p_role})
-                else:
-                    if (place_link != '') or (place_link != None):
-                        rel_company = self.parse_company(place_link)
-                        fname = "companies/" + str(urlparse(place_link).path.split('/')[-1:][0]) + '.json'
-                        rel_company = self.upload_company(fname)
-                        d.update({'company': rel_company['id']})
-                        if date_from != None:
-                            d.update({'start': date_from.strftime('%Y-%m-%d')})
-                        if date_to != None:
-                            d.update({'stop': date_to.strftime('%Y-%m-%d')})
-                        if (p_role != '') or (p_role != None):
-                            d.update({'role': p_role})
-                if d != {}:
-                    hist.append(d)
-            person['company_connections'] = hist
-            if len(hist)>0:
-                person.update({'company_connections':hist})
-
-        if reputation is not None:
-            pass
-        companies_links = list(set(companies_links))
-        #logging.info(f'{name_ru}: total {str(len(companies_links))} companies by this person, writing to files...')
-        f = open(f'persons/{id}.companies', 'w', encoding='utf-8')
-        for line in companies_links:
-            f.write(f'{line}\n')
-        f.close()
-        # -----------------------------------------
-        f = open(fname, 'w', encoding='utf-8')
-        f.write(json.dumps(person, ensure_ascii=False, indent=4))
-        f.close()
-        # logging.info(f'{name_ru}: Uploading person...')
-        # r = self.upload_person(fname)
-        # logging.info(r)
+        to_json_file(person,fname)
 
         return person
 
@@ -1434,7 +1493,7 @@ class Api:
             f.write(f'{line}\n')
         f.close()
 
-    def get_companies(self):
+    def bak_get_companies(self):
         companies = []
         for root, dirs, files in os.walk('persons'):
             fnames = files
@@ -1449,6 +1508,22 @@ class Api:
         for line in res:
             f.write(f'{line}\n')
         f.close()
+
+    def get_companies(self):
+        files = list(persons_path.rglob('full_init'))
+        companies_list = home_path / 'companies.toparse'
+        c_l = []
+        for p_file in files:
+            with open(p_file,'r',encoding='utf-8') as p_strs:
+                person = json.loads(p_strs)
+                if 'career_connections' in person.keys():
+                    for company in person['career_connections']:
+                        c_l.append(company['company-link'])
+                if 'company_connections' in person.keys():
+                    for company in person['company_connections']:
+                        c_l.append(company['company-link'])
+        with open(companies_list,'w',encoding='utf-8') as f:
+            f.write('\n'.join(c_l))
 
     def parse_company(self, url, use_proxy=False):
         path = url
@@ -1489,20 +1564,26 @@ class Api:
                                                                                                                   '').replace(
                         '\r', '').strip()})
                 if line.find_all('td')[0].text.strip() == 'Адрес':
-                    company.update({'address_company': line.find_all('td')[1].text.replace('\t', '').replace('\n',
-                                                                                                             '').replace(
-                        '\r', '').strip()})
+                    p_role = line.find_all('td')[0].text.strip()
+                    if len(p_role.split('\n')) > 1:
+                        buf = ''
+                        p_role = p_role.split('\n')
+                        for line in p_role:
+                            line = line.replace('–', '').replace(',', '').strip()
+                            if line != '': buf = buf + ', ' + line
+                        p_role = buf.strip(' ,-')
+                    else:
+                        p_role = p_role.replace('–', '').replace(',', '').strip(' ,-')
+                    company.update({'address_company': p_role})
                 if len(line.find_all('td')) == 1:
                     try:
                         ws = line.find('td').find('a')
-                        if ws.text.strip() == 'Вкбсайт':
+                        if ws.text.strip() == 'Вебсайт':
                             company.update({'website': ws['href']})
                     except:
                         pass
 
-        f = open(fname_comp, 'w', encoding='utf-8')
-        f.write(json.dumps(company, ensure_ascii=False, indent=4))
-        f.close()
+        to_json_file(company,fname_comp)
 
         return company
 
@@ -1557,19 +1638,12 @@ def go_parse():
     f = open('kyc_persons.json','r',encoding='utf-8')
     a.kyc_persons = json.loads(f.read())
     f.close()
-    # f = open('persons.json','r',encoding='utf-8')
-    # items = json.loads(f.read())
-    # f.close()
-    # for item in items:
-    #     try:
-    #         links.append(item['person-link'])
-    #     except:
-    #         logging.info(f'No link...')
-    a.multi_threaded_load(links, 10, True)
+    a.multi_threaded_load(links, 50, True)
 
 
 if __name__ == '__main__':
     init()
     go_parse()
-    # a.get_companies()
-    a.process_uploading_persons()
+    a.get_companies()
+    a.process_uploading_companies(500)
+    # a.process_uploading_persons()
