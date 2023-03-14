@@ -22,6 +22,7 @@ from urllib3.exceptions import InsecureRequestWarning
 requests.adapters.DEFAULT_RETRIES = 5
 #requests.
 
+
 dtnow = datetime.date.today().strftime('%d_%m_%Y')
 logging.basicConfig(level=logging.INFO, filename=f"parser_{dtnow}.log", filemode="a",
                     format="%(asctime)s %(levelname)s %(message)s")
@@ -53,6 +54,7 @@ def LogException():
 
 class Api:
     url = 'https://rupep.org'
+    BASE_URL = 'https://92.246.85.71/'
     persons_base = {}
     headers = {}
     # img_storage = 'pages/images/'
@@ -208,70 +210,70 @@ class Api:
 
         for idx, item in tenumerate(items, desc='Uploading...'):
             FLAG = False
-            if current < limit:
-                data = {}
+            #if current < limit:
+            data = {}
+            try:
+                name_ru = ' '.join(item['fio']['ru'].split(' ')[2:]) + ' ' + item['fio']['ru'].split(' ')[0] + " " + \
+                          item['fio']['ru'].split(' ')[1]
+                data.update({'name1_ru': name_ru.split(' ')[0]})
+                data.update({'name2_ru': name_ru.split(' ')[1]})
+                data.update({'name3_ru': name_ru.split(' ')[2]})
+                data.update({'name_ru': name_ru})
+            except:
                 try:
-                    name_ru = ' '.join(item['fio']['ru'].split(' ')[2:]) + ' ' + item['fio']['ru'].split(' ')[0] + " " + \
-                              item['fio']['ru'].split(' ')[1]
+                    name_ru = item['fio']['ru'].split(' ')[1] + ' ' + item['fio']['ru'].split(' ')[0]
                     data.update({'name1_ru': name_ru.split(' ')[0]})
                     data.update({'name2_ru': name_ru.split(' ')[1]})
-                    data.update({'name3_ru': name_ru.split(' ')[2]})
                     data.update({'name_ru': name_ru})
                 except:
-                    try:
-                        name_ru = item['fio']['ru'].split(' ')[1] + ' ' + item['fio']['ru'].split(' ')[0]
-                        data.update({'name1_ru': name_ru.split(' ')[0]})
-                        data.update({'name2_ru': name_ru.split(' ')[1]})
-                        data.update({'name_ru': name_ru})
-                    except:
-                        name_ru = item['fio']['ru'].strip()
-                        data.update({'name2_ru': name_ru})
-                        data.update({'name_ru': name_ru})
+                    name_ru = item['fio']['ru'].strip()
+                    data.update({'name2_ru': name_ru})
+                    data.update({'name_ru': name_ru})
+            try:
+                name_en = ' '.join(item['fio']['en'].split(' ')[2:]) + ' ' + item['fio']['en'].split(' ')[
+                    0] + " " + \
+                          item['fio']['en'].split(' ')[1]
+                data.update({'name1_en': name_en.split(' ')[0]})
+                data.update({'name2_en': name_en.split(' ')[1]})
+                data.update({'name3_en': name_en.split(' ')[2]})
+                data.update({'name_en': name_en})
+            except:
                 try:
-                    name_en = ' '.join(item['fio']['en'].split(' ')[2:]) + ' ' + item['fio']['en'].split(' ')[
-                        0] + " " + \
-                              item['fio']['en'].split(' ')[1]
+                    name_en = item['fio']['en'].split(' ')[1] + ' ' + item['fio']['en'].split(' ')[0]
                     data.update({'name1_en': name_en.split(' ')[0]})
                     data.update({'name2_en': name_en.split(' ')[1]})
-                    data.update({'name3_en': name_en.split(' ')[2]})
                     data.update({'name_en': name_en})
                 except:
-                    try:
-                        name_en = item['fio']['en'].split(' ')[1] + ' ' + item['fio']['en'].split(' ')[0]
-                        data.update({'name1_en': name_en.split(' ')[0]})
-                        data.update({'name2_en': name_en.split(' ')[1]})
-                        data.update({'name_en': name_en})
-                    except:
-                        name_en = item['fio']['en'].strip()
-                        data.update({'name2_en': name_en})
-                        data.update({'name_en': name_en})
-                # -- CHECK ITEM IN KYC --
-                if data['name_ru'].upper() in kyc_persons:
+                    name_en = item['fio']['en'].strip()
+                    data.update({'name2_en': name_en})
+                    data.update({'name_en': name_en})
+            # -- CHECK ITEM IN KYC --
+            if data['name_ru'].upper() in kyc_persons:
+                FLAG = True
+                KYC_NAME = data['name_ru'].upper()
+            try:
+                if data['name_en'].upper() in kyc_persons:
                     FLAG = True
-                    KYC_NAME = data['name_ru'].upper()
-                try:
-                    if data['name_en'].upper() in kyc_persons:
-                        FLAG = True
-                        KYC_NAME = data['name_en'].upper()
-                except:
-                    pass
-                # -----------------------
-                per_id = str(item['person-id'])
-                item_path = persons_path / per_id
-                item_path.mkdir(parents=False, exist_ok=True)
-                item_base_file = item_path / f'base_file'
-                item_gid_file = item_path / f'gid'
-                with open(item_base_file, 'w', encoding='utf-8') as f:
-                    f.write(json.dumps(data, ensure_ascii=False, indent=4))
+                    KYC_NAME = data['name_en'].upper()
+            except:
+                pass
+            # -----------------------
+            per_id = str(item['person-id'])
+            item_path = persons_path / per_id
+            item_path.mkdir(parents=False, exist_ok=True)
+            item_base_file = item_path / f'base_file'
+            item_gid_file = item_path / f'gid'
+            with open(item_base_file, 'w', encoding='utf-8') as f:
+                f.write(json.dumps(data, ensure_ascii=False, indent=4))
 
-                if FLAG:
-                    lst.append(data)
-                    with open(item_gid_file, 'w', encoding='utf-8') as f:
-                        f.write(str(kyc_persons[KYC_NAME]))
-                    current += 1
+            if FLAG:
+                lst.append(data)
+                with open(item_gid_file, 'w', encoding='utf-8') as f:
+                    f.write(str(kyc_persons[KYC_NAME]))
+                current += 1
             # else:
             #     current = 0
-            #     url = 'https://kycbase.io/parsers/api/persons/bulk/'
+            #     url = self.BASE_URL + 'parsers/api/persons/bulk/'
             #     headers = {
             #         'Accept': '*/*',
             #         # 'Accept-Encoding':'gzip, deflate, br',
@@ -317,7 +319,7 @@ class Api:
     def load_kyc_persons(self):
         DEV = False
         base = {}
-        url = 'https://kycbase.io/parsers/api/persons/'
+        url = self.BASE_URL + 'parsers/api/persons/'
         headers = {
             'Accept': '*/*',
             # 'Accept-Encoding':'gzip, deflate, br',
@@ -362,7 +364,8 @@ class Api:
         return base
 
     def find_company_by_name(self, company_name):
-        url = 'https://kycbase.io/parsers/api/companies/?name=' + company_name
+        
+        url = self.BASE_URL + 'parsers/api/companies/?name=' + company_name
         headers = headers = {
             'Accept': '*/*',
             # 'Accept-Encoding':'gzip, deflate, br',
@@ -378,7 +381,8 @@ class Api:
         return res
 
     def find_person_by_name(self, person):
-        url = 'https://kycbase.io/parsers/api/persons/?name=' + urllib.parse.quote_plus(person)
+        
+        url = self.BASE_URL + 'parsers/api/persons/?name=' + urllib.parse.quote_plus(person)
         #print(url)
         headers = headers = {
             'Accept': '*/*',
@@ -397,7 +401,7 @@ class Api:
                     if res['name_en'] == person:
                         #res = {'id': None}
                         logging.info(f'-- deleting {res["id"]}: {res["name_en"]}')
-                        requests.delete(f'https://kycbase.io/parsers/api/persons/{res["id"]}/', headers=headers, verify=False)
+                        requests.delete(self.BASE_URL + f'parsers/api/persons/{res["id"]}/', headers=headers, verify=False)
                     else:
                         res_new.append(res)
                 except:
@@ -413,7 +417,8 @@ class Api:
         return result
 
     def upload_company(self, fnamert: str):
-        url = 'https://kycbase.io/parsers/api/companies/'
+        
+        url = self.BASE_URL + 'parsers/api/companies/'
         headers = {
             'Accept': '*/*',
             # 'Accept-Encoding':'gzip, deflate, br',
@@ -428,14 +433,14 @@ class Api:
         t_c = self.find_company_by_name(company['name'])
         #logging.info(t_c)
         if t_c['id'] == None:
-            url = 'https://kycbase.io/parsers/api/companies/'
+            url = self.BASE_URL + 'parsers/api/companies/'
             company['name'] = company['name'].upper()
             company = json.dumps(company,ensure_ascii=False, indent=4)
             r = requests.post(url, headers=headers, data=company.encode('utf-8'), verify=False)
             #logging.info(r.text)
             return r.json()
         else:
-            url = 'https://kycbase.io/parsers/api/companies/' + str(t_c['id']) + '/'
+            url = self.BASE_URL + 'parsers/api/companies/' + str(t_c['id']) + '/'
             bb = company
             for key in t_c:
                 if key != 'id':
@@ -455,7 +460,8 @@ class Api:
                 return t_c
 
     def upload_companies(self, bulk_dict):
-        url = 'https://kycbase.io/parsers/api/companies/bulk/'
+        
+        url = self.BASE_URL + 'parsers/api/companies/bulk/'
         headers = {
             'Accept': '*/*',
             'Content-Type': 'application/json',
@@ -498,7 +504,8 @@ class Api:
         return out
 
     def upload_persons(self, bulk_dict):
-        url = 'https://kycbase.io/parsers/api/persons/bulk/'
+        
+        url = self.BASE_URL + 'parsers/api/persons/bulk/'
         headers = {
             'Accept': '*/*',
             'Content-Type': 'application/json',
@@ -576,6 +583,7 @@ class Api:
         return out
 
     def process_uploading_companies(self, limit = 200):
+        
         files = list(companies_path.rglob('*.json'))
         current = 0
         lst = []
@@ -595,6 +603,7 @@ class Api:
             buf = self.upload_persons(lst)
 
     def process_uploading_persons(self, limit = 100):
+        
         files = os.listdir('persons')
         #limit = 200
         current = 0
@@ -671,10 +680,12 @@ class Api:
             pass
 
     def convert_person(self,person):
+        
         out = {}
 
     def add_person_from_dict(self, person: dict):
-        url = 'https://kycbase.io/parsers/api/persons/'
+        
+        url = self.BASE_URL + 'parsers/api/persons/'
         headers = {
             'Accept': '*/*',
             # 'Accept-Encoding':'gzip, deflate, br',
@@ -684,7 +695,7 @@ class Api:
         }
 
         # if t_c['id'] == None:
-        #     url = 'https://kycbase.io/parsers/api/persons/'
+        #     url = self.BASE_URL + 'parsers/api/persons/'
         #     logging.info(f'{person["name_ru"]}: ADD...')
         #     person = json.dumps(person, ensure_ascii=False, indent=4)
         #     r = requests.post(url, headers=headers, data=person.encode('utf-8'), verify=False)
@@ -692,7 +703,7 @@ class Api:
         #     return r.json()
         # else:
         per = {}
-        url = 'https://kycbase.io/parsers/api/persons/'
+        url = self.BASE_URL + 'parsers/api/persons/'
         for key in person:
             if key != 'id':
                 if (person[key] != '') or (person[key] != None) or (person[key] != 0):
@@ -760,7 +771,8 @@ class Api:
             logging.info(f'PASS')
 
     def update_person_from_dict(self, person: dict):
-        url = 'https://kycbase.io/parsers/api/persons/'
+        
+        url = self.BASE_URL + 'parsers/api/persons/'
         headers = {
             'Accept': '*/*',
             # 'Accept-Encoding':'gzip, deflate, br',
@@ -774,7 +786,7 @@ class Api:
         t_c = self.find_person_by_name(person['name_ru'])
         # print(t_c)
         # if t_c['id'] == None:
-        #     url = 'https://kycbase.io/parsers/api/persons/'
+        #     url = self.BASE_URL + 'parsers/api/persons/'
         #     logging.info(f'{person["name_ru"]}: ADD...')
         #     person = json.dumps(person, ensure_ascii=False, indent=4)
         #     r = requests.post(url, headers=headers, data=person.encode('utf-8'), verify=False)
@@ -782,7 +794,7 @@ class Api:
         #     return r.json()
         # else:
         per = {}
-        url = 'https://kycbase.io/parsers/api/persons/' + str(person['id']) + '/'
+        url = self.BASE_URL + 'parsers/api/persons/' + str(person['id']) + '/'
         for key in person:
             if key != 'id':
                 if (person[key] != '') or (person[key] != None) or (person[key] != 0):
@@ -842,9 +854,9 @@ class Api:
         else:
             logging.info(f'PASS')
 
-
     def upload_person(self, fname: str):
-        url = 'https://kycbase.io/parsers/api/persons/'
+        
+        url = self.BASE_URL + 'parsers/api/persons/'
         headers = {
             'Accept': '*/*',
             # 'Accept-Encoding':'gzip, deflate, br',
@@ -857,14 +869,14 @@ class Api:
         f.close()
         t_c = self.find_person_by_name(person['name_ru'])
         if t_c['id'] == None:
-            url = 'https://kycbase.io/parsers/api/persons/'
+            url = self.BASE_URL + 'parsers/api/persons/'
             logging.info(f'{person["name_ru"]}: ADD...')
             person = json.dumps(person, ensure_ascii=False, indent=4)
             r = requests.post(url, headers=headers, data=person.encode('utf-8'), verify=False)
             logging.info(r.text)
             return r.json()
         else:
-            url = 'https://kycbase.io/parsers/api/persons/' + str(t_c['id']) + '/'
+            url = self.BASE_URL + 'parsers/api/persons/' + str(t_c['id']) + '/'
             for key in t_c:
                 if key != 'id':
                     if (t_c[key] != '') or (t_c[key] != None) or (t_c[key] != 0):
@@ -877,6 +889,7 @@ class Api:
                 return r.json()
 
     def parse_career_connections(self, workbefore):
+        
         # logging.info(f'{name_ru}: Parsing career_connections...')
         person = {}
         hist = []
@@ -962,6 +975,7 @@ class Api:
         return person
 
     def parse_personal_connections(self, connections):
+        
         # logging.info(f'{name_ru}: Parsing personal_connections...')
         person = {}
         d = {}
@@ -1011,7 +1025,7 @@ class Api:
                 dd = {}
 
                 dd.update({'person-lid':str(p_id)})
-                dd.update({'person-link': str(p_url)})
+                #dd.update({'person-link': str(p_url)})
                 #dd.update({'person2': rel_person['id']})
                 dd.update({'category': conn_type})
                 if (p_role != '') or (p_role != None):
@@ -1026,6 +1040,7 @@ class Api:
         return person
 
     def parse_companies_connections(self, companies):
+        
         # logging.info(f'{name_ru}: Parsing company_connections...')
         person = {}
         hist = []
@@ -1134,6 +1149,7 @@ class Api:
         return person
 
     def parse_personal(self,personal_trs):
+        
         person = {}
         # logging.info(f'{name_ru}: Parsing personsl...')
         for line in personal_trs:
@@ -1223,6 +1239,7 @@ class Api:
         return person
 
     def parse_person(self, url, use_proxy=False):
+        
         # path = self.url + '/articles/' + url
         companies_links = []
         path = url
@@ -1330,6 +1347,7 @@ class Api:
         return person
 
     def single_threaded_load(self, links, use_proxy=False):
+        
         for link in links:
             try:
                 d = self.parse_person(link, use_proxy)
@@ -1340,6 +1358,7 @@ class Api:
                 LogException()
 
     def single_threaded_load_companies(self, links, use_proxy=False):
+        
         for link in links:
             try:
                 d = self.parse_company(link, use_proxy)
@@ -1351,6 +1370,7 @@ class Api:
                 LogException()
 
     def multi_threaded_load_companies(self, links, threads_count, use_proxy=False):
+        
         t_s = []
         tc = threads_count
         logging.info(f'Initial links count:{len(links)}')
@@ -1401,6 +1421,7 @@ class Api:
             # print(f'Joined thread #{t_s.index(t) + 1} of {len(t_s)} with {len(l_c[t_s.index(t)])} links')
 
     def multi_threaded_load(self, links, threads_count, use_proxy=False):
+        
         t_s = []
         tc = threads_count
         logging.info(f'Initial links count:{len(links)}')
@@ -1451,6 +1472,7 @@ class Api:
             # print(f'Joined thread #{t_s.index(t) + 1} of {len(t_s)} with {len(l_c[t_s.index(t)])} links')
 
     def load_html_to_file(self, url, fname='index.html', use_proxy=False):
+        
         r = self._get(url, use_proxy)
         html = r.content.decode('utf-8')
         soup = BeautifulSoup(html, features='html.parser')
@@ -1459,6 +1481,7 @@ class Api:
         f.close()
 
     def config_load(self, fname='config.ini'):
+        
         config = configparser.ConfigParser()
         config.read(fname)
         print(config['proxies']['path'])  # -> "/path/name/"
@@ -1466,6 +1489,7 @@ class Api:
         config['DEFAULT']['default_message'] = 'Hey! help me!!'  # create
 
     def get_companies_legacy(self):
+        
         companies = []
         for root, dirs, files in os.walk('persons'):
             fnames = files
@@ -1497,6 +1521,7 @@ class Api:
         f.close()
 
     def bak_get_companies(self):
+        
         companies = []
         for root, dirs, files in os.walk('persons'):
             fnames = files
@@ -1513,6 +1538,7 @@ class Api:
         f.close()
 
     def get_companies(self):
+        
         files = list(persons_path.rglob('full_init'))
         companies_list = home_path / 'companies.toparse'
         c_l = []
@@ -1529,6 +1555,7 @@ class Api:
             f.write('\n'.join(c_l))
 
     def parse_company(self, url, use_proxy=False):
+        
         path = url
         url = urlparse(path).path.split('/')[-1:][0]
         r = self._get(path, use_proxy=use_proxy)
@@ -1592,6 +1619,7 @@ class Api:
 
 
 def init():
+    
     global a
     a = Api()
     # proxies = ['http://GrandMeg:rTd57fsD@188.191.164.19:9004']
@@ -1628,6 +1656,7 @@ def clear_folders(folders: list):
 
 
 def go_parse():
+    
     global a
     clear_folders(['companies','persons','images'])
     items = a.get_main_data(True)
@@ -1645,6 +1674,7 @@ def go_parse():
 
 
 if __name__ == '__main__':
+    
     init()
     go_parse()
     a.get_companies()
