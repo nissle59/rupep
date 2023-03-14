@@ -1570,6 +1570,6 @@ def go_parse():
 
 if __name__ == '__main__':
     init()
-    # go_parse()
+    go_parse()
     # a.get_companies()
     a.process_uploading_persons()
