@@ -1549,6 +1549,7 @@ class Api:
                 person = json.loads(p_strs.read())
                 p1 = person
                 if 'career_connections' in person.keys():
+                    comps = []
                     for company in person['career_connections']:
                         if not('company' in company.keys()):
                             if 'company-link' in company.keys():
@@ -1576,10 +1577,41 @@ class Api:
                                 try:
                                     del company['company-name']
                                 except: pass
+                        comps.append(company)
+                    person['career_connections'] = comps
+
 
                 if 'company_connections' in person.keys():
+                    comps = []
                     for company in person['company_connections']:
-                        c_l.append(company['company-link'])
+                        if not('company' in company.keys()):
+                            if 'company-link' in company.keys():
+                                c_l.append(company['company-link'])
+                            else:
+                                d = {
+                                    'name': company['company-name']
+                                }
+                                headers = {
+                                            'Accept': '*/*',
+
+                                            'Content-Type': 'application/json',
+                                            'Authorization': 'Token 26b881c992c9b4c0f1b9fe13c9a10cf9c1aacbc1'
+                                        }
+                                r = requests.post(self.BASE_URL + '/parsers/api/companies/', headers=headers, json=d, verify=False)
+                                resp = r.json()
+                                try:
+                                    company.update({'company':int(resp['id'])})
+                                    tqdm.write(str(resp['id']) + ' - ' + company['company-name'])
+                                    #print(str(resp['id']) + ' - ' + company['company-name'])
+                                except:
+                                    tqdm.write(str(resp['name'][0]) + ' - ' + company['company-name'])
+                                    #print(str(resp['name'][0]) + ' - ' + company['company-name'])
+                                    company.update({'company': int(resp['name'][0])})
+                                try:
+                                    del company['company-name']
+                                except: pass
+                        comps.append(company)
+                    person['career_connections'] = comps
 
             if person != p1:
                 with open(p_file,'w',encoding='utf-8') as f:
