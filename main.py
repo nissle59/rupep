@@ -1576,8 +1576,8 @@ class Api:
                         c_l.append(company['company-link'])
 
             if person != p1:
-            with open(p_file,'w',encoding='utf-8') as f:
-                f.write(json.dumps(person,ensure_ascii=False,indent=4))
+                with open(p_file,'w',encoding='utf-8') as f:
+                    f.write(json.dumps(person,ensure_ascii=False,indent=4))
 
         with open(companies_list,'w',encoding='utf-8') as f:
             f.write('\n'.join(c_l))
