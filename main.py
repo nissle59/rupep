@@ -18,6 +18,7 @@ from tqdm.contrib import tenumerate
 from pathlib import *
 
 requests.adapters.DEFAULT_RETRIES = 5
+#requests.
 
 dtnow = datetime.date.today().strftime('%d_%m_%Y')
 logging.basicConfig(level=logging.INFO, filename=f"parser_{dtnow}.log", filemode="a",
@@ -277,7 +278,7 @@ class Api:
             #         'Authorization': 'Token 26b881c992c9b4c0f1b9fe13c9a10cf9c1aacbc1'
             #     }
             #     try:
-            #         r = requests.post(url, headers=headers, data=json.dumps(lst,ensure_ascii=False,indent=4).encode('utf-8'))
+            #         r = requests.post(url, headers=headers, data=json.dumps(lst,ensure_ascii=False,indent=4).encode('utf-8'), verify=False)
             #         resp = r.json()
             #         for ind, i in enumerate(resp):
             #             try:
@@ -322,7 +323,7 @@ class Api:
             'Content-Type': 'application/json',
             'Authorization': 'Token 26b881c992c9b4c0f1b9fe13c9a10cf9c1aacbc1'
         }
-        r = requests.get(url, headers=headers).json()
+        r = requests.get(url, headers=headers, verify=False).json()
         count = r['count']
         logging.info(f'Persons on KYC: {count}')
         limit = 1000
@@ -334,7 +335,7 @@ class Api:
             path = url + f'?limit={limit}&offset={offset}'
             # print(path)
             try:
-                res = requests.get(path, headers=headers).json()['results']
+                res = requests.get(path, headers=headers, verify=False).json()['results']
                 for k in res:
                     try:
                         base.update({k['name_ru'].strip().upper(): int(k['id'])})
@@ -367,7 +368,7 @@ class Api:
             'Content-Type': 'application/json',
             'Authorization': 'Token 26b881c992c9b4c0f1b9fe13c9a10cf9c1aacbc1'
         }
-        r = requests.get(url, headers=headers)
+        r = requests.get(url, headers=headers, verify=False)
         try:
             res = r.json()['results'][0]
         except:
@@ -384,7 +385,7 @@ class Api:
             'Content-Type': 'application/json',
             'Authorization': 'Token 26b881c992c9b4c0f1b9fe13c9a10cf9c1aacbc1'
         }
-        r = requests.get(url, headers=headers)
+        r = requests.get(url, headers=headers, verify=False)
         res_new = []
         try:
             res_s = r.json()['results']
@@ -394,7 +395,7 @@ class Api:
                     if res['name_en'] == person:
                         #res = {'id': None}
                         logging.info(f'-- deleting {res["id"]}: {res["name_en"]}')
-                        requests.delete(f'https://kycbase.io/parsers/api/persons/{res["id"]}/', headers=headers)
+                        requests.delete(f'https://kycbase.io/parsers/api/persons/{res["id"]}/', headers=headers, verify=False)
                     else:
                         res_new.append(res)
                 except:
@@ -428,7 +429,7 @@ class Api:
             url = 'https://kycbase.io/parsers/api/companies/'
             company['name'] = company['name'].upper()
             company = json.dumps(company,ensure_ascii=False, indent=4)
-            r = requests.post(url, headers=headers, data=company.encode('utf-8'))
+            r = requests.post(url, headers=headers, data=company.encode('utf-8'), verify=False)
             #logging.info(r.text)
             return r.json()
         else:
@@ -445,7 +446,7 @@ class Api:
             if len(company) > 0:
                 company['name'] = company['name'].upper()
                 company = json.dumps(company, ensure_ascii=False, indent=4)
-                r = requests.patch(url, headers=headers, data=company.encode('utf-8'))
+                r = requests.patch(url, headers=headers, data=company.encode('utf-8'), verify=False)
                 #logging.info(r.text)
                 return r.json()
             else:
@@ -458,7 +459,7 @@ class Api:
             'Content-Type': 'application/json',
             'Authorization': 'Token 26b881c992c9b4c0f1b9fe13c9a10cf9c1aacbc1'
         }
-        r = requests.post(url, headers=headers, json=bulk_dict)
+        r = requests.post(url, headers=headers, json=bulk_dict, verify=False)
         added = []
         exist = []
         try:
@@ -503,7 +504,7 @@ class Api:
         }
         payload = json.dumps(bulk_dict,ensure_ascii=False,indent=4).encode('utf-8')
         #logging.info(payload.decode('utf-8'))
-        r = requests.post(url, headers=headers, data=payload)
+        r = requests.post(url, headers=headers, data=payload, verify=False)
         added = []
         exist = []
         #try:
@@ -684,7 +685,7 @@ class Api:
         #     url = 'https://kycbase.io/parsers/api/persons/'
         #     logging.info(f'{person["name_ru"]}: ADD...')
         #     person = json.dumps(person, ensure_ascii=False, indent=4)
-        #     r = requests.post(url, headers=headers, data=person.encode('utf-8'))
+        #     r = requests.post(url, headers=headers, data=person.encode('utf-8'), verify=False)
         #     logging.info(r.text)
         #     return r.json()
         # else:
@@ -713,7 +714,7 @@ class Api:
             # if (person['name_ru'] == 'Щербаков Иван Александрович') or (person['name_ru'] == "Чукова Валентина Владимировна"):
             #     print(p_str)
             try:
-                r = requests.post(url, headers=headers, data=p_str.encode('utf-8'))
+                r = requests.post(url, headers=headers, data=p_str.encode('utf-8'), verify=False)
                 resp = {'id':None}
 
                 try:
@@ -745,7 +746,7 @@ class Api:
                             'Authorization': 'Token 26b881c992c9b4c0f1b9fe13c9a10cf9c1aacbc1',
                             'Content-Type': m.content_type
                         }
-                        r_img = requests.post(url + str(resp["id"]) + '/upload_image/', data=m.to_string(), headers=headers_img)
+                        r_img = requests.post(url + str(resp["id"]) + '/upload_image/', data=m.to_string(), headers=headers_img, verify=False)
 
                         logging.info(r_img.json()['photo_link'])
                         #logging.info(r.text)
@@ -774,7 +775,7 @@ class Api:
         #     url = 'https://kycbase.io/parsers/api/persons/'
         #     logging.info(f'{person["name_ru"]}: ADD...')
         #     person = json.dumps(person, ensure_ascii=False, indent=4)
-        #     r = requests.post(url, headers=headers, data=person.encode('utf-8'))
+        #     r = requests.post(url, headers=headers, data=person.encode('utf-8'), verify=False)
         #     logging.info(r.text)
         #     return r.json()
         # else:
@@ -799,7 +800,7 @@ class Api:
             # if (person['name_ru'] == 'Щербаков Иван Александрович') or (person['name_ru'] == "Чукова Валентина Владимировна"):
             #     print(p_str)
             try:
-                r = requests.patch(url, headers=headers, data=p_str.encode('utf-8'))
+                r = requests.patch(url, headers=headers, data=p_str.encode('utf-8'), verify=False)
                 try:
                     resp = json.loads(r.text)
                 except:
@@ -828,7 +829,7 @@ class Api:
                             'Authorization': 'Token 26b881c992c9b4c0f1b9fe13c9a10cf9c1aacbc1',
                             'Content-Type': m.content_type
                         }
-                        r_img = requests.post(url + 'upload_image/', data=m.to_string(), headers=headers_img)
+                        r_img = requests.post(url + 'upload_image/', data=m.to_string(), headers=headers_img, verify=False)
 
                         logging.info(r_img.json()['photo_link'])
                         #logging.info(r.text)
@@ -857,7 +858,7 @@ class Api:
             url = 'https://kycbase.io/parsers/api/persons/'
             logging.info(f'{person["name_ru"]}: ADD...')
             person = json.dumps(person, ensure_ascii=False, indent=4)
-            r = requests.post(url, headers=headers, data=person.encode('utf-8'))
+            r = requests.post(url, headers=headers, data=person.encode('utf-8'), verify=False)
             logging.info(r.text)
             return r.json()
         else:
@@ -869,7 +870,7 @@ class Api:
             if len(person) > 0:
                 logging.info(f'{person["name_ru"]}: UPD...')
                 person = json.dumps(person, ensure_ascii=False, indent=4)
-                r = requests.patch(url, headers=headers, data=person.encode('utf-8'))
+                r = requests.patch(url, headers=headers, data=person.encode('utf-8'), verify=False)
                 logging.info(r.text)
                 return r.json()
 
