@@ -16,7 +16,9 @@ from bs4 import BeautifulSoup
 from tqdm import tqdm
 from tqdm.contrib import tenumerate
 from pathlib import *
+from urllib3.exceptions import InsecureRequestWarning
 
+#requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 requests.adapters.DEFAULT_RETRIES = 5
 #requests.
 
