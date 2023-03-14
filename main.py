@@ -1538,13 +1538,13 @@ class Api:
         f.close()
 
     def get_companies(self):
-        
         files = list(persons_path.rglob('full_init'))
+        #print(files)
         companies_list = home_path / 'companies.toparse'
         c_l = []
         for p_file in files:
             with open(p_file,'r',encoding='utf-8') as p_strs:
-                person = json.loads(p_strs)
+                person = json.loads(p_strs.read())
                 if 'career_connections' in person.keys():
                     for company in person['career_connections']:
                         c_l.append(company['company-link'])
@@ -1676,7 +1676,7 @@ def go_parse():
 if __name__ == '__main__':
     
     init()
-    go_parse()
+    #go_parse()
     a.get_companies()
     a.process_uploading_companies(500)
     # a.process_uploading_persons()
