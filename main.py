@@ -1567,7 +1567,7 @@ class Api:
                                     company.update({'company':int(resp['id'])})
                                 except:
                                     print(resp)
-                                    company.update({'company': int(resp['name'][0]['id'])})
+                                    company.update({'company': int(resp['name'][0])})
                                 try:
                                     del company['company-name']
                                 except: pass
