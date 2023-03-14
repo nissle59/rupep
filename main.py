@@ -25,7 +25,7 @@ logging.basicConfig(level=logging.INFO, filename=f"parser_{dtnow}.log", filemode
                     format="%(asctime)s %(levelname)s %(message)s")
 logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
-home_path = Path(__file__)
+home_path = Path.cwd()
 persons_path = home_path / 'persons'
 companies_path = home_path / 'companies'
 
