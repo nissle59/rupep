@@ -1547,7 +1547,26 @@ class Api:
                 person = json.loads(p_strs.read())
                 if 'career_connections' in person.keys():
                     for company in person['career_connections']:
-                        c_l.append(company['company-link'])
+                        if not('company' in company.keys()):
+                            if 'company-link' in company.keys():
+                                c_l.append(company['company-link'])
+                            else:
+                                d = {
+                                    'name': company['company-name']
+                                }
+                                headers = {
+                                            'Accept': '*/*',
+
+                                            'Content-Type': 'application/json',
+                                            'Authorization': 'Token 26b881c992c9b4c0f1b9fe13c9a10cf9c1aacbc1'
+                                        }
+                                r = requests.post(self.BASE_URL + '/parsers/api/companies/', headers=headers, json=d)
+                                resp = r.json()
+                                company.update({'company':int(resp['id'])})
+                                try:
+                                    del company['company-name']
+                                except: pass
+
                 if 'company_connections' in person.keys():
                     for company in person['company_connections']:
                         c_l.append(company['company-link'])
@@ -1555,7 +1574,6 @@ class Api:
             f.write('\n'.join(c_l))
 
     def parse_company(self, url, use_proxy=False):
-        
         path = url
         url = urlparse(path).path.split('/')[-1:][0]
         r = self._get(path, use_proxy=use_proxy)
