@@ -1560,7 +1560,7 @@ class Api:
                                             'Content-Type': 'application/json',
                                             'Authorization': 'Token 26b881c992c9b4c0f1b9fe13c9a10cf9c1aacbc1'
                                         }
-                                r = requests.post(self.BASE_URL + '/parsers/api/companies/', headers=headers, json=d)
+                                r = requests.post(self.BASE_URL + '/parsers/api/companies/', headers=headers, json=d, verify=False)
                                 resp = r.json()
                                 company.update({'company':int(resp['id'])})
                                 try:
