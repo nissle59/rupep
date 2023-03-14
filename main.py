@@ -1545,6 +1545,7 @@ class Api:
         for p_file in files:
             with open(p_file,'r',encoding='utf-8') as p_strs:
                 person = json.loads(p_strs.read())
+                p1 = person
                 if 'career_connections' in person.keys():
                     for company in person['career_connections']:
                         if not('company' in company.keys()):
@@ -1562,7 +1563,10 @@ class Api:
                                         }
                                 r = requests.post(self.BASE_URL + '/parsers/api/companies/', headers=headers, json=d, verify=False)
                                 resp = r.json()
-                                company.update({'company':int(resp['id'])})
+                                try:
+                                    company.update({'company':int(resp['id'])})
+                                except:
+                                    company.update({'company': int(resp['name'][0]['id'])})
                                 try:
                                     del company['company-name']
                                 except: pass
@@ -1570,6 +1574,11 @@ class Api:
                 if 'company_connections' in person.keys():
                     for company in person['company_connections']:
                         c_l.append(company['company-link'])
+
+            if person != p1:
+            with open(p_file,'w',encoding='utf-8') as f:
+                f.write(json.dumps(person,ensure_ascii=False,indent=4))
+
         with open(companies_list,'w',encoding='utf-8') as f:
             f.write('\n'.join(c_l))
 
