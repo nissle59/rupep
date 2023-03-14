@@ -1542,7 +1542,7 @@ class Api:
         #print(files)
         companies_list = home_path / 'companies.toparse'
         c_l = []
-        for p_file in files:
+        for p_file in tqdm(files):
             with open(p_file,'r',encoding='utf-8') as p_strs:
                 person = json.loads(p_strs.read())
                 p1 = person
@@ -1565,8 +1565,9 @@ class Api:
                                 resp = r.json()
                                 try:
                                     company.update({'company':int(resp['id'])})
+                                    print(str(resp['id']) + ' - ' + company['company-name'])
                                 except:
-                                    print(resp)
+                                    print(str(resp['name'][0]) + ' - ' + company['company-name'])
                                     company.update({'company': int(resp['name'][0])})
                                 try:
                                     del company['company-name']
