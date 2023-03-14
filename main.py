@@ -256,7 +256,7 @@ class Api:
                 # -----------------------
                 per_id = str(item['person-id'])
                 item_path = persons_path / per_id
-                item_path.mkdir(exist_ok=True)
+                item_path.mkdir(parents=False, exist_ok=True)
                 item_base_file = item_path / f'base_file'
                 item_gid_file = item_path / f'gid'
                 with open(item_base_file, 'w', encoding='utf-8') as f:
