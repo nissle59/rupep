@@ -244,6 +244,7 @@ def process_persons_files(dev = False):
                         del p_con["company-name"]
                     except:
                         pass
+                    tqdm.write(to_json(p_con))
                     career_connections.append(p_con)
                 if p_con["company-name"] in kyc_companies:
                     c_id = kyc_companies[p_con["company-name"]]
@@ -252,6 +253,7 @@ def process_persons_files(dev = False):
                         del p_con["company-name"]
                     except:
                         pass
+                    tqdm.write(to_json(p_con))
                     career_connections.append(p_con)
 
         if 'company_connections' in p_dict.keys():
@@ -271,6 +273,7 @@ def process_persons_files(dev = False):
                         del p_con["company-link"]
                     except:
                         pass
+                    tqdm.write(to_json(p_con))
                     company_connections.append(p_con)
 
         if 'person_connections' in p_dict.keys():
@@ -285,6 +288,7 @@ def process_persons_files(dev = False):
                             del p_con["person-lid"]
                         except:
                             pass
+                        tqdm.write(to_json(p_con))
                         person_connections.append(p_con)
 
         if (len(career_connections) == car_con_count) and (len(person_connections) == per_con_count) and (len(company_connections) == com_con_count):
