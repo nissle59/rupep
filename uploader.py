@@ -187,6 +187,10 @@ def generate_persons_compare_file():
         p_name_ru = p_dict['name_ru']
         if p_name_ru in kyc_persons.keys():
             p_dict.update({'id':kyc_persons[p_name_ru]['gid']})
+            gidfile = person.parent / 'gid'
+            if not gidfile.is_file():
+                gidfile.touch()
+                gidfile.write_text(str(p_dict['id']))
             kyc_persons[p_name_ru].update({
                 'lid':lid
             })
@@ -510,5 +514,5 @@ if __name__ == '__main__':
     generate_persons_compare_file()
     load_kyc_companies()
     process_persons_files()
-    #upload_avatars()
+    upload_avatars()
 
