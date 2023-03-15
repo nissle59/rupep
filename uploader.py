@@ -107,7 +107,7 @@ def from_json_file(filename):
         return from_json(f.read())
 
 
-def upload_companies(limit=200):
+def upload_companies(limit=500):
     def upload(l, added, exists):
         response = POST(kyc_companies_api_url_bulk, lst)
         if response:
@@ -492,7 +492,7 @@ def upload_avatars():
 
 
 if __name__ == '__main__':
-    upload_companies(200)
+    upload_companies()
     upload_persons_base()
     generate_persons_compare_file()
     load_kyc_companies()
