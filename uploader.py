@@ -37,9 +37,29 @@ headers = {
             'Authorization': 'Token 26b881c992c9b4c0f1b9fe13c9a10cf9c1aacbc1'
         }
 
-
+requests.patch(url, data=m.to_string(), headers=headers)
 def POST(url, json):
     r = requests.post(url, json=json, headers=headers, verify=False)
+    try:
+        response = r.json()
+    except:
+        response = None
+    return response
+
+
+def POST_IMG(url, fname):
+    data = {
+        'file': (fname, open(fname, 'rb'))
+    }
+    m = MultipartEncoder(data, boundary='WebAppBoundary')
+    headers_img = {
+        'Accept': '*/*',
+        'Connection': 'keep-alive',
+        'Authorization': 'Token 26b881c992c9b4c0f1b9fe13c9a10cf9c1aacbc1',
+        'Content-Type': m.content_type
+    }
+    r = requests.post(url, data=m.to_string(), headers=headers_img, verify=False)
+    #r = requests.post(url, json=json, headers=headers, verify=False)
     try:
         response = r.json()
     except:
@@ -377,6 +397,7 @@ def upload_persons_base(limit=500):
     hist_path = home_path / 'persons.history'
     to_json_file(hist_d,hist_path)
 
+
 def upload_avatars():
     files = list(persons_path.rglob('*/avatar*'))
     count = len(files)
@@ -387,7 +408,13 @@ def upload_avatars():
         if gidfile.is_file():
             with open(gidfile,'r') as f:
                 gid = f.read()
-            person_url_image = kyc_persons_api_url + str(gid) + '/'
+            person_url = kyc_persons_api_url + str(gid) + '/'
+            person_url_image = person_url + 'upload_image/'
+            per_data = GET(person_url)
+            if (per_data['photo-link'] == None) or (per_data['photo-link'][0] != '/'):
+                r = POST_IMG(person_url_image,fname)
+                tqdm.write(r['photo-link'])
+
 
 
 
@@ -398,4 +425,5 @@ if __name__ == '__main__':
     #generate_persons_compare_file()
     #load_kyc_companies()
     process_persons_files()
+    upload_avatars()
 
