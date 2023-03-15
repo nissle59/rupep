@@ -440,7 +440,7 @@ def upload_persons_base(limit=500):
             logging.info('Upload error!')
     files = list(persons_path.rglob('*/base_file'))
     lst = []
-    current = 1
+    current = 0
     added = []
     exists = []
     for fname in tqdm(files):
@@ -451,7 +451,7 @@ def upload_persons_base(limit=500):
         else:
             upload(lst,added,exists)
             lst = []
-            current = 1
+            current = 0
     if len(lst) > 0:
         upload(lst,added,exists)
 
@@ -490,10 +490,10 @@ def upload_avatars():
 
 
 if __name__ == '__main__':
-    #upload_companies(200)
-    #upload_persons_base()
-    #generate_persons_compare_file()
-    #load_kyc_companies()
+    upload_companies(200)
+    upload_persons_base()
+    generate_persons_compare_file()
+    load_kyc_companies()
     process_persons_files()
     #upload_avatars()
 
