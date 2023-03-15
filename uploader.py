@@ -171,8 +171,123 @@ def generate_persons_compare_file():
     to_json_file(kyc_persons,'kyc_persons.json')
 
 
+def load_kyc_companies():
+    # ------ LOAD companies from KYC -----
+
+    limit = 1000
+    offset = 0
+    r_init = GET(kyc_companies_api_url)
+    count = int(r_init['count'])
+    ran = round(count / limit) + 1
+    compare_list = {}
+    for i in tqdm(range(0, ran), desc='Loading KYC companies'):
+        par = {
+            'limit': limit,
+            'offset': offset
+        }
+        r = GET(kyc_companies_api_url, params=par)
+        for item in r['results']:
+            compare_list.update({
+                item['name'].upper(): int(item['id'])
+            })
+        offset += limit - 1
+    to_json_file(compare_list, 'kyc_companies.json')
+
+
+def process_persons_files():
+    kyc_persons = from_json_file('kyc_persons.json')
+    kyc_companies = from_json_file('kyc_companies.json')
+    files = list(persons_path.rglob('*/full_init'))
+    lids = [pp.parts[-2][0] for pp in files]
+    logging.info(f'{len(files)} local persons found')
+    for person in tqdm(files):
+        person = Path(person)
+        lid = int(person.parts[-2:][0])
+        p_dict = from_json_file(person)
+        p_res_dict = p_dict
+        try:
+            car_con_count = len(p_res_dict['career_connections'])
+            del p_res_dict['career_connections']
+        except:
+            car_con_count = 0
+        try:
+            per_con_count = len(p_res_dict['person_connections'])
+            del p_res_dict['person_connections']
+        except:
+            per_con_count = 0
+        try:
+            com_con_count = len(p_res_dict['company_connections'])
+            del p_res_dict['company_connections']
+        except:
+            com_con_count = 0
+        career_connections = []
+        person_connections = []
+        company_connections = []
+
+        for p_con in p_dict['career_connections']:
+            if p_con["company-name"].upper() in kyc_companies:
+                c_id = kyc_companies[p_con["company-name"].upper()]
+                p_con.update({'company':int(c_id)})
+                try:
+                    del p_con["company-name"]
+                except:
+                    pass
+                career_connections.append(p_con)
+            if p_con["company-name"] in kyc_companies:
+                c_id = kyc_companies[p_con["company-name"]]
+                p_con.update({'company':int(c_id)})
+                try:
+                    del p_con["company-name"]
+                except:
+                    pass
+                career_connections.append(p_con)
+
+        for p_con in p_dict['company_connections']:
+            if p_con["company-name"].upper() in kyc_companies:
+                c_id = kyc_companies[p_con["company-name"].upper()]
+                p_con.update({'company':int(c_id)})
+                try:
+                    del p_con["company-name"]
+                except:
+                    pass
+                try:
+                    del p_con["company-taxid"]
+                except:
+                    pass
+                try:
+                    del p_con["company-link"]
+                except:
+                    pass
+                company_connections.append(p_con)
+
+        for p_con in p_dict['person_connections']:
+            if p_con["person-lid"] in lids:
+                p_rel = from_json_file(persons_path / p_con["person-lid"] / 'base_file')
+                p_name_ru = p_rel['name_ru']
+                if p_name_ru in kyc_persons.keys():
+                    p_id = kyc_persons[p_name_ru]
+                    p_con.update({'person2':int(p_id)})
+                    try:
+                        del p_con["person-lid"]
+                    except:
+                        pass
+                    person_connections.append(p_con)
+
+        if (len(career_connections) == car_con_count) and (len(person_connections) == per_con_count) and (len(company_connections) == com_con_count):
+            p_res_dict.update({
+                'career_connections': career_connections,
+                'person_connections': person_connections,
+                'company_connections':company_connections
+            })
+            out_file = person.parent / 'to_upload.json'
+            to_json_file(p_res_dict,out_file)
+
+    files = list(persons_path.rglob('*/to_upload.json'))
+    logging.info(f'{len(files)} persons ready to upload')
+
 
 if __name__ == '__main__':
     #upload_companies(200)
-    generate_persons_compare_file()
+    load_kyc_companies()
+    process_persons_files()
 
