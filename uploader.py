@@ -278,7 +278,7 @@ def process_persons_files(dev = False):
 
         if 'person_connections' in p_dict.keys():
             for p_con in per_conns:
-                if p_con["person-lid"] in lids:
+                if int(p_con["person-lid"]) in lids:
                     p_rel = from_json_file(persons_path / p_con["person-lid"] / 'base_file')
                     p_name_ru = p_rel['name_ru']
                     if p_name_ru in kyc_persons.keys():
