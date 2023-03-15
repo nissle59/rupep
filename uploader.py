@@ -329,10 +329,25 @@ def upload_persons_base(limit=500):
     hist_path = home_path / 'persons.history'
     to_json_file(hist_d,hist_path)
 
+def upload_avatars():
+    files = list(persons_path.rglob('*/avatar*'))
+    count = len(files)
+    logging.info(f'Found {count} avatars for persons')
+    for fname in tqdm(files):
+        fname = Path(fname)
+        gidfile = fname.parent / 'gid'
+        if gidfile.is_file():
+            with open(gidfile,'r') as f:
+                gid = f.read()
+            person_url_image = kyc_persons_api_url + str(gid) + '/'
+
+
+
 
 if __name__ == '__main__':
     #upload_companies(200)
-    upload_persons_base()
+    #upload_persons_base()
+    generate_persons_compare_file()
     load_kyc_companies()
     process_persons_files()
 
