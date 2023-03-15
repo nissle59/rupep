@@ -416,6 +416,8 @@ def upload_avatars():
                 tqdm.write(r['photo_link'])
             else:
                 tqdm.write(per_data['photo_link'])
+        else:
+            tqdm.write('No GID file')
 
 
 
