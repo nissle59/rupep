@@ -300,7 +300,7 @@ def process_persons_files(dev = False):
                 p_rel = from_json_file(persons_path / str(p_con["person-lid"]) / 'base_file')
                 p_name_ru = p_rel['name_ru']
                 if p_name_ru in kyc_persons.keys():
-                    p_id = kyc_persons[p_name_ru]
+                    p_id = kyc_persons[p_name_ru]['gid']
                     p_con.update({'person2':int(p_id)})
                     try:
                         del p_con["person-lid"]
