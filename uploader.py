@@ -95,7 +95,7 @@ def upload_companies(limit=200):
                         added.append(item_out)
                     else:
                         item_out = lst[idx]
-                        item_out.update({'id': item['name'][0]})
+                        item_out.update({'id': item['name'][0]['id']})
                         exists.append(item_out)
                     logging.info(f'{item_out["id"]} - {item_out["name"]}')
         else:
