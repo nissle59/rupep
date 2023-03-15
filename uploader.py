@@ -411,9 +411,9 @@ def upload_avatars():
             person_url = kyc_persons_api_url + str(gid) + '/'
             person_url_image = person_url + 'upload_image/'
             per_data = GET(person_url)
-            if (per_data['photo-link'] == None) or (per_data['photo-link'][0] != '/'):
+            if (per_data['photo_link'] == None) or (per_data['photo_link'][0] != '/'):
                 r = POST_IMG(person_url_image,fname)
-                tqdm.write(r['photo-link'])
+                tqdm.write(r['photo_link'])
 
 
 
