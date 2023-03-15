@@ -218,6 +218,8 @@ def process_persons_files(dev = False):
     kyc_persons = from_json_file('kyc_persons.json')
     kyc_companies = from_json_file('kyc_companies.json')
     files = list(persons_path.rglob('*/full_init'))
+    comps = list(companies_path.rglob('*.json'))
+    comps_lids = [int(pp.stem) for pp in comps]
     pers_count = len(files)
     lids = [int(pp.parts[-2]) for pp in files]
     #print(lids)
@@ -323,6 +325,47 @@ def process_persons_files(dev = False):
                     pass
                 #tqdm.write(to_json(p_con))
                 company_connections.append(p_con)
+            elif 'company-link' in p_con.keys():
+                if p_con["company-link"].find('rupep') > -1:
+                    company_lid = int(urlparse(p_con["company-link"]).path.split('/')[-1:][0])
+                    if company_lid in comps_lids:
+                        js_fname = str(company_lid) + '.json'
+                        comp_name = from_json_file(companies_path / js_fname)['name']
+                        if comp_name.upper() in kyc_companies:
+                            c_id = kyc_companies[comp_name.upper()]
+                            p_con.update({'company': int(c_id)})
+                            try:
+                                del p_con["company-name"]
+                            except:
+                                pass
+                            try:
+                                del p_con["company-taxid"]
+                            except:
+                                pass
+                            try:
+                                del p_con["company-link"]
+                            except:
+                                pass
+                            # tqdm.write(to_json(p_con))
+                            company_connections.append(p_con)
+                        elif comp_name in kyc_companies:
+                            c_id = kyc_companies[comp_name]
+                            p_con.update({'company': int(c_id)})
+                            try:
+                                del p_con["company-name"]
+                            except:
+                                pass
+                            try:
+                                del p_con["company-taxid"]
+                            except:
+                                pass
+                            try:
+                                del p_con["company-link"]
+                            except:
+                                pass
+                            # tqdm.write(to_json(p_con))
+                            company_connections.append(p_con)
+
 
         #if 'person_connections' in p_dict.keys():
         for p_con in per_conns:
