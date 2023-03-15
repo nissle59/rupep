@@ -163,7 +163,7 @@ def generate_persons_compare_file():
         p_dict = from_json_file(person)
         p_name_ru = p_dict['name_ru']
         if p_name_ru in kyc_persons.keys():
-            p_dict.update({'id':kyc_persons[p_name_ru]})
+            p_dict.update({'id':kyc_persons[p_name_ru]['gid']})
             kyc_persons[p_name_ru].update({
                 'lid':lid
             })
