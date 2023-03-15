@@ -227,7 +227,7 @@ def process_persons_files(dev = False):
         try:
             com_con_count = len(p_res_dict['company_connections'])
             com_conns = p_res_dict['company_connections']
-            tqdm.write(to_json(per_conns))
+            tqdm.write(to_json(com_conns))
             del p_res_dict['company_connections']
         except:
             com_con_count = 0
