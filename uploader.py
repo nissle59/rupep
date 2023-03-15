@@ -294,7 +294,7 @@ def upload_persons_base(limit=500):
         if response:
             for item in response:
                 idx = response.index(item)
-                if "name" in item.keys():
+                if "name_ru" in item.keys():
                     if isinstance(item['name_ru'], str):
                         item_out = item
                         added.append(item_out)
