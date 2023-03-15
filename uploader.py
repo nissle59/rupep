@@ -246,7 +246,7 @@ def process_persons_files(dev = False):
                     pass
                 tqdm.write(to_json(p_con))
                 career_connections.append(p_con)
-            if p_con["company-name"] in kyc_companies:
+            elif p_con["company-name"] in kyc_companies:
                 c_id = kyc_companies[p_con["company-name"]]
                 p_con.update({'company':int(c_id)})
                 try:
@@ -275,7 +275,7 @@ def process_persons_files(dev = False):
                     pass
                 tqdm.write(to_json(p_con))
                 company_connections.append(p_con)
-            if p_con["company-name"] in kyc_companies:
+            elif p_con["company-name"] in kyc_companies:
                 c_id = kyc_companies[p_con["company-name"]]
                 p_con.update({'company':int(c_id)})
                 try:
