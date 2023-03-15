@@ -211,7 +211,7 @@ def process_persons_files(dev = False):
         try:
             car_con_count = len(p_res_dict['career_connections'])
             car_conns = p_res_dict['career_connections']
-            tqdm.write(to_json(car_conns))
+            tqdm.write(f'CAR COUNT: {car_con_count}')
             del p_res_dict['career_connections']
         except:
             car_con_count = 0
@@ -219,7 +219,7 @@ def process_persons_files(dev = False):
         try:
             per_con_count = len(p_res_dict['person_connections'])
             per_conns = p_res_dict['person_connections']
-            tqdm.write(to_json(per_conns))
+            tqdm.write(f'CAR COUNT: {per_con_count}')
             del p_res_dict['person_connections']
         except:
             per_con_count = 0
@@ -227,7 +227,7 @@ def process_persons_files(dev = False):
         try:
             com_con_count = len(p_res_dict['company_connections'])
             com_conns = p_res_dict['company_connections']
-            tqdm.write(to_json(com_conns))
+            tqdm.write(f'CAR COUNT: {com_con_count}')
             del p_res_dict['company_connections']
         except:
             com_con_count = 0
@@ -275,21 +275,42 @@ def process_persons_files(dev = False):
                     pass
                 tqdm.write(to_json(p_con))
                 company_connections.append(p_con)
+            if p_con["company-name"] in kyc_companies:
+                c_id = kyc_companies[p_con["company-name"]]
+                p_con.update({'company':int(c_id)})
+                try:
+                    del p_con["company-name"]
+                except:
+                    pass
+                try:
+                    del p_con["company-taxid"]
+                except:
+                    pass
+                try:
+                    del p_con["company-link"]
+                except:
+                    pass
+                tqdm.write(to_json(p_con))
+                company_connections.append(p_con)
 
         #if 'person_connections' in p_dict.keys():
         for p_con in per_conns:
             if int(p_con["person-lid"]) in lids:
-                p_rel = from_json_file(persons_path / p_con["person-lid"] / 'base_file')
+                p_rel = from_json_file(persons_path / str(p_con["person-lid"]) / 'base_file')
                 p_name_ru = p_rel['name_ru']
                 if p_name_ru in kyc_persons.keys():
                     p_id = kyc_persons[p_name_ru]
                     p_con.update({'person2':int(p_id)})
                     try:
                         del p_con["person-lid"]
-                    except:
-                        pass
+                    except Exception as e:
+                        tqdm.write(e)
                     tqdm.write(to_json(p_con))
                     person_connections.append(p_con)
+                else:
+                    tqdm.write(f'{p_name_ru} not in kyc_persons.keys()')
+            else:
+                tqdm.write(f'{p_con["person-lid"]} not in lids')
 
         if (len(career_connections) == car_con_count) and (len(person_connections) == per_con_count) and (len(company_connections) == com_con_count):
             p_res_dict.update({
