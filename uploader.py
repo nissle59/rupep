@@ -292,10 +292,12 @@ def process_persons_files():
             logging.info(f'{p_res_dict["name_ru"]}: Ready to upload!')
             to_json_file(p_res_dict,out_file)
         else:
-            logging.info(f'Diff: CAR {car_con_count} -> {len(career_connections)}; PER {per_con_count} -> {len(person_connections)}; CAR {com_con_count} -> {len(company_connections)}; ')
+            pass
+            #logging.info(f'Diff: CAR {car_con_count} -> {len(career_connections)}; PER {per_con_count} -> {len(person_connections)}; CAR {com_con_count} -> {len(company_connections)}; ')
 
     files = list(persons_path.rglob('*/to_upload.json'))
     logging.info(f'{len(files)} persons of {pers_count} ready to upload')
+
 
 def upload_persons_base(limit=500):
     def upload(l, added, exists):
