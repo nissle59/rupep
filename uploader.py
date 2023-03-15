@@ -150,6 +150,7 @@ def generate_persons_compare_file():
                     'gid':int(item['id'])
                 }
             })
+        offset += limit-1
     to_json_file(compare_list,'kyc_persons.json')
 
     # ---------- LOAD local persons -----
