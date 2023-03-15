@@ -199,7 +199,7 @@ def process_persons_files(dev = False):
     kyc_companies = from_json_file('kyc_companies.json')
     files = list(persons_path.rglob('*/full_init'))
     pers_count = len(files)
-    lids = [pp.parts[-2][0] for pp in files]
+    lids = [int(pp.parts[-2][0]) for pp in files]
     logging.info(f'{len(files)} local persons found')
     count = 1
     for person in tqdm(files):
