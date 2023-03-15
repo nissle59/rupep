@@ -122,6 +122,8 @@ def upload_companies(limit=500):
                         item_out.update({'id': item['name'][0]['id']})
                         exists.append(item_out)
                     tqdm.write(f'{item_out["id"]} - {item_out["name"]}')
+                else:
+                    logging.info(f'ERR {";".join(list(item.keys()))}')
         else:
             tqdm.write('Upload error!')
     files = list(companies_path.rglob('*.json'))
@@ -130,7 +132,7 @@ def upload_companies(limit=500):
     added = []
     exists = []
     for fname in tqdm(files):
-        if current < limit:
+        if current != limit:
             company = from_json_file(fname)
             lst.append(company)
             current += 1
@@ -437,6 +439,8 @@ def upload_persons_base(limit=500):
                         item_out.update({'id': item['name_ru'][0]['id']})
                         exists.append(item_out)
                     tqdm.write(f'{item_out["id"]} - {item_out["name_ru"]}')
+                else:
+                    logging.info(f'ERR {";".join(list(item.keys()))}')
         else:
             tqdm.write('Upload error!')
     files = list(persons_path.rglob('*/base_file'))
@@ -445,7 +449,7 @@ def upload_persons_base(limit=500):
     added = []
     exists = []
     for fname in tqdm(files):
-        if current < limit:
+        if current != limit:
             company = from_json_file(fname)
             lst.append(company)
             current += 1
