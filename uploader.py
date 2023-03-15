@@ -62,7 +62,7 @@ def GET(url, params = None):
     else:
         r = requests.get(url, headers=headers, verify=False)
     try:
-        logging.info(r.text)
+        #logging.info(r.text)
         response = r.json()
     except:
         response = None
