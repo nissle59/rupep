@@ -1620,6 +1620,14 @@ class Api:
         with open(companies_list,'w',encoding='utf-8') as f:
             f.write('\n'.join(c_l))
 
+    def load_companies(self):
+        companies_list = home_path / 'companies.toparse'
+        with open(companies_list,'r',encoding='utf-8') as f:
+            lines = f.read().split('\n')
+            lines = list(set(lines))
+            for line in tqdm(lines):
+                self.parse_company(line)
+
     def parse_company(self, url, use_proxy=False):
         path = url
         url = urlparse(path).path.split('/')[-1:][0]
@@ -1742,6 +1750,7 @@ if __name__ == '__main__':
     
     init()
     #go_parse()
-    a.get_companies()
+    #a.get_companies()
+    a.load_companies()
     a.process_uploading_companies(500)
     # a.process_uploading_persons()
