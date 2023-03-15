@@ -459,6 +459,7 @@ def upload_persons_base(limit=500):
         'added' : added,
         'exists' : exists
     }
+    logging.info(f'Summary processed: {str(len(added)+len(exists))} of {str(len(files))}')
     hist_path = home_path / 'persons.history'
     to_json_file(hist_d,hist_path)
 
