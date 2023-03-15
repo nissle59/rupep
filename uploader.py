@@ -143,7 +143,7 @@ def generate_persons_compare_file():
             'limit': limit,
             'offset': offset
         }
-        r = GET(kyc_persons_api_url)
+        r = GET(kyc_persons_api_url, params=par)
         for item in r['results']:
             compare_list.update({
                 item['name_ru'] : {
