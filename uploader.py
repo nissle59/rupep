@@ -39,7 +39,7 @@ headers = {
 
 
 def POST(url, json):
-    r = requests.post(url, json=json, headers=headers)
+    r = requests.post(url, json=json, headers=headers, verify=False)
     try:
         response = r.json()
     except:
@@ -48,7 +48,7 @@ def POST(url, json):
 
 
 def PATCH(url, json):
-    r = requests.patch(url, json=json, headers=headers)
+    r = requests.patch(url, json=json, headers=headers, verify=False)
     try:
         response = r.json()
     except:
@@ -57,7 +57,7 @@ def PATCH(url, json):
 
 
 def GET(url, params = {}):
-    r = requests.post(url, headers=headers, params=params)
+    r = requests.post(url, headers=headers, params=params, verify=False)
     try:
         response = r.json()
     except:
