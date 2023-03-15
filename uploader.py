@@ -288,9 +288,51 @@ def process_persons_files():
     files = list(persons_path.rglob('*/to_upload.json'))
     logging.info(f'{len(files)} persons of {pers_count} ready to upload')
 
+def upload_persons_base(limit=500):
+    def upload(l, added, exists):
+        response = POST(kyc_persons_api_url_bulk, lst)
+        if response:
+            for item in response:
+                idx = response.index(item)
+                if "name" in item.keys():
+                    if isinstance(item['name_ru'], str):
+                        item_out = item
+                        added.append(item_out)
+                    else:
+                        item_out = lst[idx]
+                        item_out.update({'id': item['name_ru'][0]['id']})
+                        exists.append(item_out)
+                    logging.info(f'{item_out["id"]} - {item_out["name_ru"]}')
+        else:
+            logging.info('Upload error!')
+    files = list(persons_path.rglob('*/base_file'))
+    lst = []
+    current = 1
+    added = []
+    exists = []
+    for fname in tqdm(files):
+        if current < limit:
+            company = from_json_file(fname)
+            lst.append(company)
+            current += 1
+        else:
+            upload(lst,added,exists)
+            lst = []
+            current = 1
+    if len(lst) > 0:
+        upload(lst,added,exists)
+
+    hist_d = {
+        'added' : added,
+        'exists' : exists
+    }
+    hist_path = home_path / 'persons.history'
+    to_json_file(hist_d,hist_path)
+
 
 if __name__ == '__main__':
     #upload_companies(200)
+    upload_persons_base()
     load_kyc_companies()
     process_persons_files()
 
