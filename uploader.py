@@ -350,12 +350,15 @@ def process_persons_files(dev = False):
             #logging.info()
             to_json_file(p_res_dict,out_file)
         else:
+            st = f'Diff: CAR {car_con_count} -> {len(career_connections)}; PER {per_con_count} -> {len(person_connections)}; CAR {com_con_count} -> {len(company_connections)}; '
+            logging.info(st)
             debug_file = Path('debug') / p_res_dict['name_ru']
             debug_file.touch(exist_ok=True)
             deb.append(p_res_dict)
+            deb.append({'res': st})
             debug_file.write_text(to_json(deb),'utf-8')
             deb = []
-            logging.info(f'Diff: CAR {car_con_count} -> {len(career_connections)}; PER {per_con_count} -> {len(person_connections)}; CAR {com_con_count} -> {len(company_connections)}; ')
+
         count += 1
 
     files = list(persons_path.rglob('*/to_upload.json'))
