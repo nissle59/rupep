@@ -49,7 +49,7 @@ def POST(url, json):
 
 def POST_IMG(url, fname):
     data = {
-        'file': (fname, open(fname, 'rb'))
+        'file': (fname.name, open(fname, 'rb'))
     }
     m = MultipartEncoder(data, boundary='WebAppBoundary')
     headers_img = {
