@@ -200,6 +200,7 @@ def process_persons_files(dev = False):
     files = list(persons_path.rglob('*/full_init'))
     pers_count = len(files)
     lids = [int(pp.parts[-2][0]) for pp in files]
+    print(lids)
     logging.info(f'{len(files)} local persons found')
     count = 1
     for person in tqdm(files):
