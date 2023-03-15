@@ -424,6 +424,6 @@ if __name__ == '__main__':
     #upload_persons_base()
     #generate_persons_compare_file()
     #load_kyc_companies()
-    process_persons_files()
+    #process_persons_files()
     upload_avatars()
 
