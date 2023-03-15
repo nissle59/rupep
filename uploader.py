@@ -59,6 +59,7 @@ def PATCH(url, json):
 def GET(url, params = {}):
     r = requests.post(url, headers=headers, params=params, verify=False)
     try:
+        logging.info(r.text)
         response = r.json()
     except:
         response = None
