@@ -198,6 +198,7 @@ def process_persons_files():
     kyc_persons = from_json_file('kyc_persons.json')
     kyc_companies = from_json_file('kyc_companies.json')
     files = list(persons_path.rglob('*/full_init'))
+    pers_count = len(files)
     lids = [pp.parts[-2][0] for pp in files]
     logging.info(f'{len(files)} local persons found')
     for person in tqdm(files):
@@ -285,7 +286,7 @@ def process_persons_files():
             to_json_file(p_res_dict,out_file)
 
     files = list(persons_path.rglob('*/to_upload.json'))
-    logging.info(f'{len(files)} persons ready to upload')
+    logging.info(f'{len(files)} persons of {pers_count} ready to upload')
 
 
 if __name__ == '__main__':
