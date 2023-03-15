@@ -1679,9 +1679,9 @@ class Api:
                     else:
                         p_role = p_role.replace('–', '').replace(',', '').strip(' ,-')
                     company.update({'address_company': p_role})
-                if len(lines) == 1:
+                if lines[0].text.strip() == 'Вебсайт':
                     try:
-                        ws = line.find('td').find('a')
+                        ws = lines[0].find('a')
                         if ws.text.strip() == 'Вебсайт':
                             company.update({'website': ws['href']})
                     except:
