@@ -283,7 +283,10 @@ def process_persons_files():
                 'company_connections':company_connections
             })
             out_file = person.parent / 'to_upload.json'
+            logging.info(f'{p_res_dict["name_ru"]}: Ready to upload!')
             to_json_file(p_res_dict,out_file)
+        else:
+            logging.info(f'Diff: CAR {car_con_count} -> {len(career_connections)}; PER {per_con_count} -> {len(person_connections)}; CAR {com_con_count} -> {len(company_connections)}; ')
 
     files = list(persons_path.rglob('*/to_upload.json'))
     logging.info(f'{len(files)} persons of {pers_count} ready to upload')
@@ -347,7 +350,7 @@ def upload_avatars():
 if __name__ == '__main__':
     #upload_companies(200)
     #upload_persons_base()
-    generate_persons_compare_file()
-    load_kyc_companies()
+    #generate_persons_compare_file()
+    #load_kyc_companies()
     process_persons_files()
 
