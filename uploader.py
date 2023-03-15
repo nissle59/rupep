@@ -37,7 +37,7 @@ headers = {
             'Authorization': 'Token 26b881c992c9b4c0f1b9fe13c9a10cf9c1aacbc1'
         }
 
-requests.patch(url, data=m.to_string(), headers=headers)
+
 def POST(url, json):
     r = requests.post(url, json=json, headers=headers, verify=False)
     try:
