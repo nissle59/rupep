@@ -145,6 +145,7 @@ def upload_companies(limit=200):
         'added' : added,
         'exists' : exists
     }
+    logging.info(f'Summary processed {str(len(added)+len(exists))} companies of {str(len(files))}')
     hist_path = home_path / 'companies.history'
     to_json_file(hist_d,hist_path)
 
