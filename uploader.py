@@ -415,7 +415,7 @@ def upload_avatars():
                 r = POST_IMG(person_url_image,fname)
                 tqdm.write(r['photo_link'])
             else:
-                tqdm.write(per_data['photo_link'])
+                tqdm.write('DO NOT NEED TO UPD: '+per_data['photo_link'])
         else:
             tqdm.write('No GID file')
 
