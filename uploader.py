@@ -439,6 +439,15 @@ def upload_persons_base(limit=500):
                         item_out.update({'id': item['name_ru'][0]['id']})
                         exists.append(item_out)
                     tqdm.write(f'{item_out["id"]} - {item_out["name_ru"]}')
+                elif "name_en" in item.keys():
+                    if isinstance(item['name_en'], str):
+                        item_out = item
+                        added.append(item_out)
+                    else:
+                        item_out = lst[idx]
+                        item_out.update({'id': item['name_en'][0]['id']})
+                        exists.append(item_out)
+                    tqdm.write(f'{item_out["id"]} - {item_out["name_en"]}')
                 else:
                     logging.info(f'ERR {";".join(list(item.keys()))}')
         else:
