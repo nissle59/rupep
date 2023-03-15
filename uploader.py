@@ -124,3 +124,7 @@ def upload_companies(limit=200):
 
     to_json_file(hist_d,home_path / 'companies.history')
 
+
+if __name__ == '__main__':
+    upload_companies(200)
+
