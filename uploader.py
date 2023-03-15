@@ -105,7 +105,7 @@ def upload_companies(limit=200):
     current = 1
     added = []
     exists = []
-    for fname in files:
+    for fname in tqdm(files):
         if current < limit:
             company = from_json_file(fname)
             lst.append(company)
