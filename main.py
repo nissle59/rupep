@@ -1750,6 +1750,6 @@ if __name__ == '__main__':
     init()
     go_parse()
     a.get_companies()
-    #a.load_companies()
+    a.load_companies()
     #a.process_uploading_companies(500)
     # a.process_uploading_persons()
