@@ -344,7 +344,7 @@ def process_persons_files(dev = False):
                     pass
                     #tqdm.write(f'{p_name_ru} not in kyc_persons.keys()')
             else:
-                pass
+                per_con_count = per_con_count - 1
                 #tqdm.write(f'{p_con["person-lid"]} not in lids')
 
         if (len(career_connections) == car_con_count) and (len(person_connections) == per_con_count) and (len(company_connections) == com_con_count):
