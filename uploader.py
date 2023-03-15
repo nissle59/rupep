@@ -126,7 +126,7 @@ def upload_companies(limit=500):
             tqdm.write('Upload error!')
     files = list(companies_path.rglob('*.json'))
     lst = []
-    current = 1
+    current = 0
     added = []
     exists = []
     for fname in tqdm(files):
@@ -137,7 +137,7 @@ def upload_companies(limit=500):
         else:
             upload(lst,added,exists)
             lst = []
-            current = 1
+            current = 0
     if len(lst) > 0:
         upload(lst,added,exists)
 
