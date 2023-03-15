@@ -194,14 +194,16 @@ def load_kyc_companies():
     to_json_file(compare_list, 'kyc_companies.json')
 
 
-def process_persons_files():
+def process_persons_files(dev = False):
     kyc_persons = from_json_file('kyc_persons.json')
     kyc_companies = from_json_file('kyc_companies.json')
     files = list(persons_path.rglob('*/full_init'))
     pers_count = len(files)
     lids = [pp.parts[-2][0] for pp in files]
     logging.info(f'{len(files)} local persons found')
+    count = 1
     for person in tqdm(files):
+        if (count == 2) and dev: break
         person = Path(person)
         lid = int(person.parts[-2:][0])
         p_dict = from_json_file(person)
@@ -209,6 +211,7 @@ def process_persons_files():
         try:
             car_con_count = len(p_res_dict['career_connections'])
             car_conns = p_res_dict['career_connections']
+            tqdm.write(to_json(car_conns))
             del p_res_dict['career_connections']
         except:
             car_con_count = 0
@@ -216,6 +219,7 @@ def process_persons_files():
         try:
             per_con_count = len(p_res_dict['person_connections'])
             per_conns = p_res_dict['person_connections']
+            tqdm.write(to_json(per_conns))
             del p_res_dict['person_connections']
         except:
             per_con_count = 0
@@ -223,6 +227,7 @@ def process_persons_files():
         try:
             com_con_count = len(p_res_dict['company_connections'])
             com_conns = p_res_dict['company_connections']
+            tqdm.write(to_json(per_conns))
             del p_res_dict['company_connections']
         except:
             com_con_count = 0
@@ -294,6 +299,7 @@ def process_persons_files():
         else:
             pass
             #logging.info(f'Diff: CAR {car_con_count} -> {len(career_connections)}; PER {per_con_count} -> {len(person_connections)}; CAR {com_con_count} -> {len(company_connections)}; ')
+        count += 1
 
     files = list(persons_path.rglob('*/to_upload.json'))
     logging.info(f'{len(files)} persons of {pers_count} ready to upload')
