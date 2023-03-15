@@ -229,7 +229,7 @@ def process_persons_files(dev = False):
         #lid = int(person.parts[-2:])
         p_dict = from_json_file(person)
         deb = []
-        deb.append(p_dict)
+
         p_res_dict = p_dict
         try:
             car_con_count = len(p_res_dict['career_connections'])
@@ -255,6 +255,14 @@ def process_persons_files(dev = False):
         except:
             com_con_count = 0
             com_conns = []
+
+        init_conns = {
+            'career_connections':car_conns,
+            'person_connections':per_conns,
+            'company_connections':com_conns
+        }
+        deb.append(init_conns)
+
         career_connections = []
         person_connections = []
         company_connections = []
@@ -350,11 +358,16 @@ def process_persons_files(dev = False):
             #logging.info()
             to_json_file(p_res_dict,out_file)
         else:
+            end_conns = {
+                'career_connections': career_connections,
+                'person_connections': person_connections,
+                'company_connections': company_connections
+            }
             st = f'Diff: CAR {car_con_count} -> {len(career_connections)}; PER {per_con_count} -> {len(person_connections)}; CAR {com_con_count} -> {len(company_connections)}; '
             logging.info(st)
             debug_file = Path('debug') / p_res_dict['name_ru']
             debug_file.touch(exist_ok=True)
-            deb.append(p_res_dict)
+            deb.append(end_conns)
             deb.append({'res': st})
             debug_file.write_text(to_json(deb),'utf-8')
             deb = []
