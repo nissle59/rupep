@@ -324,7 +324,8 @@ def process_persons_files(dev = False):
                 'company_connections':company_connections
             })
             out_file = person.parent / 'to_upload.json'
-            logging.info(f'{p_res_dict["name_ru"]}: Ready to upload!')
+            tqdm.write(f'{p_res_dict["name_ru"]}: Ready to upload!')
+            #logging.info()
             to_json_file(p_res_dict,out_file)
         else:
             pass
