@@ -1644,11 +1644,12 @@ class Api:
         company_trs = profile.find('table').find_all('tr')
         if company_trs is not None:
             for line in company_trs:
-                if line.find_all('td')[0].text.strip() == 'ОГРН':
+                lines = line.find_all('td')
+                if lines[0].text.strip() == 'ОГРН':
                     company.update({'registration_id': line.find_all('td')[1].text.replace('\t', '').replace('\n',
                                                                                                              '').replace(
                         '\r', '').strip()})
-                if line.find_all('td')[0].text.strip() == 'Дата создания':
+                if lines[0].text.strip() == 'Дата создания':
                     dt_str = line.find_all('td')[1].text.replace('\t', '').replace('\n', '').replace('\r', '').strip()
                     try:
                         date_cr = datetime.datetime.strptime(dt_str, '%d.%m.%Y')
@@ -1662,11 +1663,11 @@ class Api:
                                 date_cr = None
                     if date_cr != None:
                         company.update({'date_creation': date_cr.strftime('%Y-%m-%d')})
-                if line.find_all('td')[0].text.strip() == 'Зарегистрирован(-а)':
+                if lines[0].text.strip() == 'Зарегистрирован(-а)':
                     company.update({'country_registration': line.find_all('td')[1].text.replace('\t', '').replace('\n',
                                                                                                                   '').replace(
                         '\r', '').strip()})
-                if line.find_all('td')[0].text.strip() == 'Адрес':
+                if lines[0].text.strip() == 'Адрес':
                     p_role = line.find_all('td')[1].text.strip()
                     if len(p_role.split('\n')) > 1:
                         buf = ''
@@ -1678,7 +1679,7 @@ class Api:
                     else:
                         p_role = p_role.replace('–', '').replace(',', '').strip(' ,-')
                     company.update({'address_company': p_role})
-                if len(line.find_all('td')) == 1:
+                if len(lines) == 1:
                     try:
                         ws = line.find('td').find('a')
                         if ws.text.strip() == 'Вебсайт':
