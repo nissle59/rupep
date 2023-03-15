@@ -219,7 +219,7 @@ def process_persons_files(dev = False):
         try:
             per_con_count = len(p_res_dict['person_connections'])
             per_conns = p_res_dict['person_connections']
-            tqdm.write(f'CAR COUNT: {per_con_count}')
+            tqdm.write(f'PER COUNT: {per_con_count}')
             del p_res_dict['person_connections']
         except:
             per_con_count = 0
@@ -227,7 +227,7 @@ def process_persons_files(dev = False):
         try:
             com_con_count = len(p_res_dict['company_connections'])
             com_conns = p_res_dict['company_connections']
-            tqdm.write(f'CAR COUNT: {com_con_count}')
+            tqdm.write(f'COM COUNT: {com_con_count}')
             del p_res_dict['company_connections']
         except:
             com_con_count = 0
