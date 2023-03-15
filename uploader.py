@@ -208,24 +208,30 @@ def process_persons_files():
         p_res_dict = p_dict
         try:
             car_con_count = len(p_res_dict['career_connections'])
+            car_conns = p_res_dict['career_connections']
             del p_res_dict['career_connections']
         except:
             car_con_count = 0
+            car_conns = []
         try:
             per_con_count = len(p_res_dict['person_connections'])
+            per_conns = p_res_dict['person_connections']
             del p_res_dict['person_connections']
         except:
             per_con_count = 0
+            per_conns = []
         try:
             com_con_count = len(p_res_dict['company_connections'])
+            com_conns = p_res_dict['company_connections']
             del p_res_dict['company_connections']
         except:
             com_con_count = 0
+            com_conns = []
         career_connections = []
         person_connections = []
         company_connections = []
         if 'career_connections' in p_dict.keys():
-            for p_con in p_dict['career_connections']:
+            for p_con in car_conns:
                 if p_con["company-name"].upper() in kyc_companies:
                     c_id = kyc_companies[p_con["company-name"].upper()]
                     p_con.update({'company':int(c_id)})
@@ -244,7 +250,7 @@ def process_persons_files():
                     career_connections.append(p_con)
 
         if 'company_connections' in p_dict.keys():
-            for p_con in p_dict['company_connections']:
+            for p_con in com_conns:
                 if p_con["company-name"].upper() in kyc_companies:
                     c_id = kyc_companies[p_con["company-name"].upper()]
                     p_con.update({'company':int(c_id)})
@@ -263,7 +269,7 @@ def process_persons_files():
                     company_connections.append(p_con)
 
         if 'person_connections' in p_dict.keys():
-            for p_con in p_dict['person_connections']:
+            for p_con in per_conns:
                 if p_con["person-lid"] in lids:
                     p_rel = from_json_file(persons_path / p_con["person-lid"] / 'base_file')
                     p_name_ru = p_rel['name_ru']
