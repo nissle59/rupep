@@ -414,6 +414,8 @@ def upload_avatars():
             if (per_data['photo_link'] == None) or (per_data['photo_link'][0] != '/'):
                 r = POST_IMG(person_url_image,fname)
                 tqdm.write(r['photo_link'])
+            else:
+                tqdm.write(per_data['photo_link'])
 
 
 
