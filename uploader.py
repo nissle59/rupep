@@ -223,55 +223,57 @@ def process_persons_files():
         career_connections = []
         person_connections = []
         company_connections = []
-
-        for p_con in p_dict['career_connections']:
-            if p_con["company-name"].upper() in kyc_companies:
-                c_id = kyc_companies[p_con["company-name"].upper()]
-                p_con.update({'company':int(c_id)})
-                try:
-                    del p_con["company-name"]
-                except:
-                    pass
-                career_connections.append(p_con)
-            if p_con["company-name"] in kyc_companies:
-                c_id = kyc_companies[p_con["company-name"]]
-                p_con.update({'company':int(c_id)})
-                try:
-                    del p_con["company-name"]
-                except:
-                    pass
-                career_connections.append(p_con)
-
-        for p_con in p_dict['company_connections']:
-            if p_con["company-name"].upper() in kyc_companies:
-                c_id = kyc_companies[p_con["company-name"].upper()]
-                p_con.update({'company':int(c_id)})
-                try:
-                    del p_con["company-name"]
-                except:
-                    pass
-                try:
-                    del p_con["company-taxid"]
-                except:
-                    pass
-                try:
-                    del p_con["company-link"]
-                except:
-                    pass
-                company_connections.append(p_con)
-
-        for p_con in p_dict['person_connections']:
-            if p_con["person-lid"] in lids:
-                p_rel = from_json_file(persons_path / p_con["person-lid"] / 'base_file')
-                p_name_ru = p_rel['name_ru']
-                if p_name_ru in kyc_persons.keys():
-                    p_id = kyc_persons[p_name_ru]
-                    p_con.update({'person2':int(p_id)})
+        if 'career_connections' in p_dict.keys():
+            for p_con in p_dict['career_connections']:
+                if p_con["company-name"].upper() in kyc_companies:
+                    c_id = kyc_companies[p_con["company-name"].upper()]
+                    p_con.update({'company':int(c_id)})
                     try:
-                        del p_con["person-lid"]
+                        del p_con["company-name"]
                     except:
                         pass
-                    person_connections.append(p_con)
+                    career_connections.append(p_con)
+                if p_con["company-name"] in kyc_companies:
+                    c_id = kyc_companies[p_con["company-name"]]
+                    p_con.update({'company':int(c_id)})
+                    try:
+                        del p_con["company-name"]
+                    except:
+                        pass
+                    career_connections.append(p_con)
+
+        if 'company_connections' in p_dict.keys():
+            for p_con in p_dict['company_connections']:
+                if p_con["company-name"].upper() in kyc_companies:
+                    c_id = kyc_companies[p_con["company-name"].upper()]
+                    p_con.update({'company':int(c_id)})
+                    try:
+                        del p_con["company-name"]
+                    except:
+                        pass
+                    try:
+                        del p_con["company-taxid"]
+                    except:
+                        pass
+                    try:
+                        del p_con["company-link"]
+                    except:
+                        pass
+                    company_connections.append(p_con)
+
+        if 'person_connections' in p_dict.keys():
+            for p_con in p_dict['person_connections']:
+                if p_con["person-lid"] in lids:
+                    p_rel = from_json_file(persons_path / p_con["person-lid"] / 'base_file')
+                    p_name_ru = p_rel['name_ru']
+                    if p_name_ru in kyc_persons.keys():
+                        p_id = kyc_persons[p_name_ru]
+                        p_con.update({'person2':int(p_id)})
+                        try:
+                            del p_con["person-lid"]
+                        except:
+                            pass
+                        person_connections.append(p_con)
 
         if (len(career_connections) == car_con_count) and (len(person_connections) == per_con_count) and (len(company_connections) == com_con_count):
             p_res_dict.update({
