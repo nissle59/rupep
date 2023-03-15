@@ -121,10 +121,53 @@ def upload_companies(limit=200):
         'added' : added,
         'exists' : exists
     }
+    hist_path = home_path / 'companies.history'
+    to_json_file(hist_d,hist_path)
 
-    to_json_file(hist_d,home_path / 'companies.history')
+
+def generate_persons_compare_file():
+    # ------ LOAD persons from KYC -----
+
+    limit = 1000
+    offset = 0
+    r_init = GET(kyc_persons_api_url)
+    count = int(r_init['count'])
+    ran = round(count / limit) + 1
+    compare_list = {}
+    for i in tqdm(range(0, ran), desc='Loading KYC persons'):
+        par = {
+            'limit': limit,
+            'offset': offset
+        }
+        r = GET(kyc_persons_api_url)
+        for item in r['results']:
+            compare_list.update({
+                item['name_ru'] : {
+                    'gid':int(item['id'])
+                }
+            })
+    to_json_file(compare_list,'kyc_persons.json')
+
+    # ---------- LOAD local persons -----
+    kyc_persons = from_json_file('kyc_persons.json')
+    files = list(persons_path.rglob('*/full_init'))
+    logging.info(f'{len(files)} local persons found')
+    for person in tqdm(files):
+        person = Path(person)
+        lid = int(person.parts[-2:][0])
+        p_dict = from_json_file(person)
+        p_name_ru = p_dict['name_ru']
+        if p_name_ru in kyc_persons.keys():
+            p_dict.update({'id':kyc_persons[p_name_ru]})
+            kyc_persons[p_name_ru].update({
+                'lid':lid
+            })
+            to_json_file(p_dict,person)
+    to_json_file(kyc_persons,'kyc_persons.json')
+
 
 
 if __name__ == '__main__':
-    upload_companies(200)
+    #upload_companies(200)
+    generate_persons_compare_file()
 
