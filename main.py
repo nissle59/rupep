@@ -479,7 +479,7 @@ class Api:
                 #print(item)
                 try:
                     if isinstance(item['name'], list):
-                        item_id = int(item['name_ru'][0]['id'])
+                        item_id = int(item['name'][0])
                         try:
                             item_out = bulk_dict[idx]
                             item_out.update({'id':item_id})
@@ -598,11 +598,11 @@ class Api:
                     lst.append(item)
                     current += 1
             else:
-                buf = self.upload_persons(lst)
+                buf = self.upload_companies(lst)
                 current = 0
                 lst = []
         if len(lst) > 0:
-            buf = self.upload_persons(lst)
+            buf = self.upload_companies(lst)
 
     def process_uploading_persons(self, limit = 100):
         
@@ -1693,7 +1693,6 @@ class Api:
 
 
 def init():
-    
     global a
     a = Api()
     # proxies = ['http://GrandMeg:rTd57fsD@188.191.164.19:9004']
