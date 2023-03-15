@@ -1667,7 +1667,7 @@ class Api:
                                                                                                                   '').replace(
                         '\r', '').strip()})
                 if line.find_all('td')[0].text.strip() == 'Адрес':
-                    p_role = line.find_all('td')[0].text.strip()
+                    p_role = line.find_all('td')[1].text.strip()
                     if len(p_role.split('\n')) > 1:
                         buf = ''
                         p_role = p_role.split('\n')
