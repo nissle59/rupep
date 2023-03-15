@@ -228,6 +228,8 @@ def process_persons_files(dev = False):
         person = Path(person)
         #lid = int(person.parts[-2:])
         p_dict = from_json_file(person)
+        deb = []
+        deb.append(p_dict)
         p_res_dict = p_dict
         try:
             car_con_count = len(p_res_dict['career_connections'])
@@ -348,8 +350,12 @@ def process_persons_files(dev = False):
             #logging.info()
             to_json_file(p_res_dict,out_file)
         else:
-            pass
-            #logging.info(f'Diff: CAR {car_con_count} -> {len(career_connections)}; PER {per_con_count} -> {len(person_connections)}; CAR {com_con_count} -> {len(company_connections)}; ')
+            debug_file = Path('debug') / p_res_dict['name_ru']
+            debug_file.touch(exist_ok=True)
+            deb.append(p_res_dict)
+            debug_file.write_text(to_json(deb),'utf-8')
+            deb = []
+            logging.info(f'Diff: CAR {car_con_count} -> {len(career_connections)}; PER {per_con_count} -> {len(person_connections)}; CAR {com_con_count} -> {len(company_connections)}; ')
         count += 1
 
     files = list(persons_path.rglob('*/to_upload.json'))
@@ -429,6 +435,6 @@ if __name__ == '__main__':
     #upload_persons_base()
     #generate_persons_compare_file()
     #load_kyc_companies()
-    #process_persons_files()
-    upload_avatars()
+    process_persons_files()
+    #upload_avatars()
 
