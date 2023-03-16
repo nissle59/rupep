@@ -553,7 +553,7 @@ def upload_avatars():
             #tqdm.write('No GID file')
 
 
-def upload_persons_full(limit=2):
+def upload_persons_full(limit=200):
     def upload():
         response = PATCH(kyc_persons_api_url_bulk, lst)
         if response:
