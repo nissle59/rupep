@@ -490,7 +490,7 @@ def upload_persons_base(limit=500):
                         added.append(item_out)
                     else:
                         item_out = lst[idx]
-                        item_out.update({'id': item['name_ru'][0]['id']})
+                        item_out.update({'id': item['name_ru'][0][1]})
                         exists.append(item_out)
                     tqdm.write(f'{item_out["id"]} - {item_out["name_ru"]}')
                 elif "name_en" in item.keys():
