@@ -505,14 +505,45 @@ def upload_avatars():
             #tqdm.write('No GID file')
 
 
+def upload_persons_full(limit=200):
+    def upload():
+        response = PATCH(kyc_persons_api_url_bulk, lst)
+        if response:
+            for item in response:
+                out.append(item)
+        else:
+            tqdm.write('Upload error!')
+    files = list(persons_path.rglob('*/to_upload.json'))
+    count = len(files)
+    logging.info(f'Found {count} persons to upload')
+    lst = []
+    out = []
+    current = 0
+    for fname in tqdm(files):
+        if current != limit:
+            person = from_json_file(fname)
+            lst.append(person)
+            gidfile = fname.parent / 'gid'
+            if not gidfile.is_file:
+                with open(gidfile,'w') as f:
+                    f.write(str(person['id']))
+            current += 1
+        else:
+            upload()
+            lst = []
+            current = 0
+    if len(lst) > 0:
+        upload()
+    logging.info(f'Summary processed: {str(len(out))} of {str(len(files))}')
 
 
 
 if __name__ == '__main__':
-    upload_companies()
-    upload_persons_base()
-    generate_persons_compare_file()
-    load_kyc_companies()
-    process_persons_files()
-    upload_avatars()
+    # upload_companies()
+    # upload_persons_base()
+    # generate_persons_compare_file()
+    # load_kyc_companies()
+    # process_persons_files()
+    upload_persons_full()
+    # upload_avatars()
 
