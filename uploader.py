@@ -597,10 +597,10 @@ def upload_persons_full(limit=200):
 if __name__ == '__main__':
     logging.info(dtnow)
     #upload_companies()
-    upload_persons_base(10)
+    upload_persons_base()
     generate_persons_compare_file()
     load_kyc_companies()
     process_persons_files()
-    upload_persons_full(100)
+    upload_persons_full(300)
     # upload_avatars()
 
