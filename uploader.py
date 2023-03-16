@@ -513,6 +513,7 @@ def upload_persons_full(limit=200):
                 out.append(item)
         else:
             tqdm.write('Upload error!')
+    logging.info('Start files walking...')
     files = list(persons_path.rglob('*/to_upload.json'))
     count = len(files)
     logging.info(f'Found {count} persons to upload')
