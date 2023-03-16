@@ -16,7 +16,7 @@ home_path = Path.cwd()
 persons_path = home_path / 'persons'
 companies_path = home_path / 'companies'
 
-kyc_url = 'https://92.246.85.71/parsers/api/'
+kyc_url = 'https://kycbase.io/parsers/api/'
 kyc_companies_api_url = kyc_url + 'companies/'
 kyc_companies_api_url_bulk = kyc_companies_api_url + 'bulk/'
 kyc_persons_api_url = kyc_url + 'persons/'
@@ -594,10 +594,10 @@ def upload_persons_full(limit=200):
 if __name__ == '__main__':
     logging.info(dtnow)
     #upload_companies()
-    upload_persons_base()
+    upload_persons_base(100)
     generate_persons_compare_file()
     load_kyc_companies()
     process_persons_files()
-    upload_persons_full()
+    upload_persons_full(100)
     # upload_avatars()
 
