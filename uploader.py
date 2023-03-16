@@ -520,6 +520,7 @@ def upload_persons_base(limit=500):
             lst.append(company)
             current += 1
         else:
+            #to_json_file(lst,'tst.json')
             upload(lst,added,exists)
             lst = []
             current = 0
