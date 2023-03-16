@@ -1731,7 +1731,7 @@ def clear_folders(folders: list):
 def go_parse():
     
     global a
-    clear_folders(['companies','persons','images'])
+    #clear_folders(['companies','persons','images'])
     items = a.get_main_data(True)
     links = []
     for item in items:
