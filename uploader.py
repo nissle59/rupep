@@ -120,7 +120,7 @@ def upload_companies(limit=500):
                     else:
                         item_out = lst[idx]
                         tqdm.write(to_json(item))
-                        item_out.update({'id': item['name'][0]['id']})
+                        item_out.update({'id': int(item['name'][0][1])})
                         exists.append(item_out)
                     tqdm.write(f'{item_out["id"]} - {item_out["name"]}')
                 else:
