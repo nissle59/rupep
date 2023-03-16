@@ -65,6 +65,7 @@ def POST_IMG(url, fname):
         response = r.json()
     except:
         response = None
+        tqdm.write(f'Error #{r.status_code}')
     return response
 
 
@@ -74,6 +75,7 @@ def PATCH(url, json):
         response = r.json()
     except:
         response = None
+        tqdm.write(f'Error #{r.status_code}')
     return response
 
 
@@ -87,6 +89,7 @@ def GET(url, params = None):
         response = r.json()
     except:
         response = None
+        tqdm.write(f'Error #{r.status_code}')
     return response
 
 
