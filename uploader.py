@@ -237,9 +237,24 @@ def process_persons_files(dev = False):
         person = Path(person)
         #lid = int(person.parts[-2:])
         p_dict = from_json_file(person)
+
         deb = []
 
         p_res_dict = p_dict
+
+        try:
+            sites = p_res_dict['sites']
+            del p_res_dict['sites']
+        except:
+            sites = []
+
+        try:
+            social_profiles = p_res_dict['social_profiles']
+            del p_res_dict['social_profiles']
+        except:
+            social_profiles = []
+
+
         try:
             car_con_count = len(p_res_dict['career_connections'])
             car_conns = p_res_dict['career_connections']
@@ -275,7 +290,35 @@ def process_persons_files(dev = False):
         career_connections = []
         person_connections = []
         company_connections = []
+        sites_new = []
+        socials = []
         #if 'career_connections' in p_dict.keys():
+
+        for p_site in sites:
+            d = {}
+            if 'archive-link' in p_site.keys():
+                d.update({'archive_link':p_site["archive-link"]})
+            if 'archive-title' in p_site.keys():
+                d.update({'archive_title': p_site["archive-title"]})
+            if 'name' in p_site.keys():
+                d.update({'name': p_site["name"]})
+            if 'link' in p_site.keys():
+                d.update({'link': p_site["link"]})
+            sites_new.append(d)
+
+        for p_site in social_profiles:
+            d = {}
+            if 'archive-link' in p_site.keys():
+                d.update({'archive_link':p_site["archive-link"]})
+            if 'archive-title' in p_site.keys():
+                d.update({'archive_title': p_site["archive-title"]})
+            if 'name' in p_site.keys():
+                d.update({'name': p_site["name"]})
+            if 'link' in p_site.keys():
+                d.update({'link': p_site["link"]})
+            socials.append(d)
+
+
         for p_con in car_conns:
             if p_con["company-name"].upper() in kyc_companies:
                 c_id = kyc_companies[p_con["company-name"].upper()]
@@ -396,6 +439,11 @@ def process_persons_files(dev = False):
             else:
                 per_con_count = per_con_count - 1
                 #tqdm.write(f'{p_con["person-lid"]} not in lids')
+
+        p_res_dict.update({
+            'sites': sites_new,
+            'social_profiles':socials
+        })
 
         if (len(career_connections) == car_con_count) and (len(person_connections) == per_con_count) and (len(company_connections) == com_con_count):
             p_res_dict.update({
@@ -547,7 +595,7 @@ if __name__ == '__main__':
     # upload_persons_base()
     # generate_persons_compare_file()
     # load_kyc_companies()
-    # process_persons_files()
+    process_persons_files()
     upload_persons_full()
     # upload_avatars()
 
