@@ -510,6 +510,7 @@ def upload_persons_full(limit=10):
         response = PATCH(kyc_persons_api_url_bulk, lst)
         if response:
             for item in response:
+                tqdm.write(f'{item["id"]}: {item["name_ru"]} - UPDATED')
                 out.append(item)
         else:
             tqdm.write('Upload error!')
