@@ -505,7 +505,7 @@ def upload_avatars():
             #tqdm.write('No GID file')
 
 
-def upload_persons_full(limit=10):
+def upload_persons_full(limit=2):
     def upload():
         response = PATCH(kyc_persons_api_url_bulk, lst)
         if response:
@@ -513,7 +513,8 @@ def upload_persons_full(limit=10):
                 tqdm.write(f'{item["id"]}: {item["name_ru"]} - UPDATED')
                 out.append(item)
         else:
-            tqdm.write('Upload error!')
+            tqdm.write('Upload error!:')
+            tqdm.write(to_json(lst))
     logging.info('Start files walking...')
     files = list(persons_path.rglob('*/to_upload.json'))
     count = len(files)
