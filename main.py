@@ -126,14 +126,17 @@ class Api:
     def _get(self, url, use_proxy=False):
         if use_proxy:
             print(url)
-            r = requests.get(url=url, headers=self.headers, proxies=self.proxies[self._proxy_iter])#, verify=False)
+            r = requests.get(url=url, headers=self.headers, proxies=self.proxies[self._proxy_iter], verify=False)
             if (len(self.proxies) - 1) != self._proxy_iter:
                 self._proxy_iter += 1
             else:
                 self._proxy_iter = 0
         else:
-            r = requests.get(url=url, headers=self.headers)
-        return r
+            r = requests.get(url=url, headers=self.headers, verify=False)
+        if r.status_code not in [403,404,500,502,503]:
+            return r
+        else:
+            logging.info(f'{r.status_code}: {url}')
 
     def get_main_data(self, use_proxy=False):
         items = []
@@ -142,7 +145,8 @@ class Api:
         r = self._get(path, use_proxy=use_proxy)
         html = r.content.decode('utf-8')
         soup = BeautifulSoup(html, features="html.parser")
-        persons_soup = soup.find('table', {'class': 'everything'}).find('tbody').find_all('tr')
+        #print(soup.prettify())
+        persons_soup = soup.find('table', {'class': 'everything'}).find_all('tr')[1:]
         for person_soup in persons_soup:
             tds = person_soup.find_all('td')
             fio_td = tds[0]
@@ -1696,10 +1700,30 @@ def init():
     global a
     a = Api()
     # proxies = ['http://GrandMeg:rTd57fsD@188.191.164.19:9004']
-    proxies = []
+    # proxies = [
+    #     'http://user107366:olt1iy@193.3.18.238:7152',
+    #     'http://user107366:olt1iy@193.3.18.196:7152',
+    #     'http://user107366:olt1iy@188.64.140.14:7152',
+    #     'http://user107366:olt1iy@188.95.71.43:7152',
+    #     'http://user107366:olt1iy@188.93.136.238:7152',
+    #     'http://6J9FPsSx:XBYbZC5d@45.132.129.24:64994',
+    #     'http://6J9FPsSx:XBYbZC5d@109.196.172.232:62070',
+    #     'http://6J9FPsSx:XBYbZC5d@45.152.116.220:63492',
+    #     'http://6J9FPsSx:XBYbZC5d@176.103.91.182:64482',
+    #     'http://6J9FPsSx:XBYbZC5d@91.239.85.237:64772',
+    #     'http://6J9FPsSx:XBYbZC5d@91.241.182.240:61726',
+    #     'http://6J9FPsSx:XBYbZC5d@91.247.220.116:64230',
+    #     'http://6J9FPsSx:XBYbZC5d@46.150.246.5:62880',
+    #     'http://6J9FPsSx:XBYbZC5d@46.150.247.74:64062',
+    #     'http://6J9FPsSx:XBYbZC5d@46.150.244.26:62362',
+    #     'http://cusq7Q:gYAfFe@170.83.235.7:8000',
+    #     'http://wcQT86:jZ6Z7D@154.30.133.132:8000',
+    #     'http://3FrkKs:J4vEBR@185.183.160.146:8000'
+    # ]
     rf = 'https://3FrkKs:J4vEBR@185.183.160.146:8000'
     usa = 'http://wcQT86:jZ6Z7D@154.30.133.132:8000'
-    proxies.append(usa)
+    #proxies.append(usa)
+    proxies = [usa]
     for proxy in proxies:
         a.proxies.append({
             "http": proxy,
@@ -1729,7 +1753,6 @@ def clear_folders(folders: list):
 
 
 def go_parse():
-    
     global a
     #clear_folders(['companies','persons','images'])
     items = a.get_main_data(True)
@@ -1748,8 +1771,8 @@ def go_parse():
 
 if __name__ == '__main__':
     init()
-    #go_parse()
-    #a.get_companies()
+    go_parse()
+    a.get_companies()
     a.load_companies()
     #a.process_uploading_companies(500)
     # a.process_uploading_persons()

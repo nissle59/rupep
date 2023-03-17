@@ -44,7 +44,7 @@ def POST(url, json):
         response = r.json()
     except:
         response = None
-        tqdm.write(f'Error #{r.status_code}')
+        tqdm.write(f'Error #{r.status_code}; {r.text}')
     return response
 
 
