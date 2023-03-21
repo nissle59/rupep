@@ -44,7 +44,7 @@ def POST(url, json):
         response = r.json()
     except:
         response = None
-        tqdm.write(f'Error #{r.status_code}; {r.text}')
+        logging.info(f'Error #{r.status_code}; {r.text}')
     return response
 
 
@@ -65,7 +65,7 @@ def POST_IMG(url, fname):
         response = r.json()
     except:
         response = None
-        tqdm.write(f'Error #{r.status_code}')
+        logging.info(f'Error #{r.status_code}')
     return response
 
 
@@ -75,7 +75,7 @@ def PATCH(url, json):
         response = r.json()
     except:
         response = None
-        tqdm.write(f'Error #{r.status_code}')
+        logging.info(f'Error #{r.status_code}')
     return response
 
 
@@ -89,7 +89,7 @@ def GET(url, params = None):
         response = r.json()
     except:
         response = None
-        tqdm.write(f'Error #{r.status_code}')
+        logging.info(f'Error #{r.status_code}')
     return response
 
 
@@ -123,14 +123,14 @@ def upload_companies(limit=500):
                         added.append(item_out)
                     else:
                         item_out = lst[idx]
-                        tqdm.write(to_json(item))
+                        logging.info(to_json(item))
                         item_out.update({'id': int(item['name'][0][1])})
                         exists.append(item_out)
-                    tqdm.write(f'{item_out["id"]} - {item_out["name"]}')
+                    logging.info(f'{item_out["id"]} - {item_out["name"]}')
                 else:
                     logging.info(f'ERR {";".join(list(item.keys()))}')
         else:
-            tqdm.write('Upload error!')
+            logging.info('Upload error!')
     files = list(companies_path.rglob('*.json'))
     lst = []
     current = 0
@@ -263,7 +263,7 @@ def process_persons_files(dev = False):
         try:
             car_con_count = len(p_res_dict['career_connections'])
             car_conns = p_res_dict['career_connections']
-            #tqdm.write(f'CAR COUNT: {car_con_count}')
+            #logging.info(f'CAR COUNT: {car_con_count}')
             del p_res_dict['career_connections']
         except:
             car_con_count = 0
@@ -271,7 +271,7 @@ def process_persons_files(dev = False):
         try:
             per_con_count = len(p_res_dict['person_connections'])
             per_conns = p_res_dict['person_connections']
-            #tqdm.write(f'PER COUNT: {per_con_count}')
+            #logging.info(f'PER COUNT: {per_con_count}')
             del p_res_dict['person_connections']
         except:
             per_con_count = 0
@@ -279,7 +279,7 @@ def process_persons_files(dev = False):
         try:
             com_con_count = len(p_res_dict['company_connections'])
             com_conns = p_res_dict['company_connections']
-            #tqdm.write(f'COM COUNT: {com_con_count}')
+            #logging.info(f'COM COUNT: {com_con_count}')
             del p_res_dict['company_connections']
         except:
             com_con_count = 0
@@ -332,7 +332,7 @@ def process_persons_files(dev = False):
                     del p_con["company-name"]
                 except:
                     pass
-                #tqdm.write(to_json(p_con))
+                #logging.info(to_json(p_con))
                 career_connections.append(p_con)
             elif p_con["company-name"] in kyc_companies:
                 c_id = kyc_companies[p_con["company-name"]]
@@ -341,7 +341,7 @@ def process_persons_files(dev = False):
                     del p_con["company-name"]
                 except:
                     pass
-                #tqdm.write(to_json(p_con))
+                #logging.info(to_json(p_con))
                 career_connections.append(p_con)
 
         #if 'company_connections' in p_dict.keys():
@@ -361,7 +361,7 @@ def process_persons_files(dev = False):
                     del p_con["company-link"]
                 except:
                     pass
-                #tqdm.write(to_json(p_con))
+                #logging.info(to_json(p_con))
                 company_connections.append(p_con)
             elif p_con["company-name"] in kyc_companies:
                 c_id = kyc_companies[p_con["company-name"]]
@@ -378,7 +378,7 @@ def process_persons_files(dev = False):
                     del p_con["company-link"]
                 except:
                     pass
-                #tqdm.write(to_json(p_con))
+                #logging.info(to_json(p_con))
                 company_connections.append(p_con)
             elif 'company-link' in p_con.keys():
                 if p_con["company-link"].find('rupep') > -1:
@@ -401,7 +401,7 @@ def process_persons_files(dev = False):
                                 del p_con["company-link"]
                             except:
                                 pass
-                            # tqdm.write(to_json(p_con))
+                            # logging.info(to_json(p_con))
                             company_connections.append(p_con)
                         elif comp_name in kyc_companies:
                             c_id = kyc_companies[comp_name]
@@ -418,7 +418,7 @@ def process_persons_files(dev = False):
                                 del p_con["company-link"]
                             except:
                                 pass
-                            # tqdm.write(to_json(p_con))
+                            # logging.info(to_json(p_con))
                             company_connections.append(p_con)
 
 
@@ -435,15 +435,15 @@ def process_persons_files(dev = False):
                             del p_con["person-lid"]
                         except Exception as e:
                             pass
-                            #tqdm.write(e)
-                        #tqdm.write(to_json(p_con))
+                            #logging.info(e)
+                        #logging.info(to_json(p_con))
                         person_connections.append(p_con)
                 else:
                     pass
-                    #tqdm.write(f'{p_name_ru} not in kyc_persons.keys()')
+                    #logging.info(f'{p_name_ru} not in kyc_persons.keys()')
             else:
                 per_con_count = per_con_count - 1
-                #tqdm.write(f'{p_con["person-lid"]} not in lids')
+                #logging.info(f'{p_con["person-lid"]} not in lids')
 
         p_res_dict.update({
             'sites': sites_new,
@@ -457,7 +457,7 @@ def process_persons_files(dev = False):
                 'company_connections':company_connections
             })
             out_file = person.parent / 'to_upload.json'
-            tqdm.write(f'{p_res_dict["name_ru"]}: Ready to upload!')
+            logging.info(f'{p_res_dict["name_ru"]}: Ready to upload!')
             #logging.info()
             to_json_file(p_res_dict,out_file)
         else:
@@ -495,7 +495,7 @@ def upload_persons_base(limit=500):
                         item_out = lst[idx]
                         item_out.update({'id': item['name_ru'][0][1]})
                         exists.append(item_out)
-                    tqdm.write(f'{item_out["id"]} - {item_out["name_ru"]}')
+                    logging.info(f'{item_out["id"]} - {item_out["name_ru"]}')
                 elif "name_en" in item.keys():
                     if isinstance(item['name_en'], str):
                         item_out = item
@@ -504,11 +504,11 @@ def upload_persons_base(limit=500):
                         item_out = lst[idx]
                         item_out.update({'id': item['name_en'][0][1]})
                         exists.append(item_out)
-                    tqdm.write(f'{item_out["id"]} - {item_out["name_en"]}')
+                    logging.info(f'{item_out["id"]} - {item_out["name_en"]}')
                 else:
                     logging.info(f'ERR {";".join(list(item.keys()))}')
         else:
-            tqdm.write('Upload error!')
+            logging.info('Upload error!')
     files = list(persons_path.rglob('*/base_file'))
     lst = []
     current = 0
@@ -551,12 +551,12 @@ def upload_avatars():
             per_data = GET(person_url)
             if (per_data['photo_link'] == None) or (per_data['photo_link'][0] != '/'):
                 r = POST_IMG(person_url_image,fname)
-                tqdm.write(r['photo_link'])
+                logging.info(r['photo_link'])
             else:
-                tqdm.write('DO NOT NEED TO UPD: '+per_data['photo_link'])
+                logging.info('DO NOT NEED TO UPD: '+per_data['photo_link'])
         else:
             pass
-            #tqdm.write('No GID file')
+            #logging.info('No GID file')
 
 
 def upload_persons_full(limit=200):
@@ -564,11 +564,11 @@ def upload_persons_full(limit=200):
         response = PATCH(kyc_persons_api_url_bulk, lst)
         if response:
             for item in response:
-                tqdm.write(f'{item["id"]}: {item["name_ru"]} - UPDATED')
+                logging.info(f'{item["id"]}: {item["name_ru"]} - UPDATED')
                 out.append(item)
         else:
-            tqdm.write('Upload error!:')
-            tqdm.write(to_json(lst))
+            logging.info('Upload error!:')
+            logging.info(to_json(lst))
     logging.info('Start files walking...')
     files = list(persons_path.rglob('*/to_upload.json'))
     count = len(files)
@@ -598,10 +598,10 @@ def upload_persons_full(limit=200):
 if __name__ == '__main__':
     logging.info(dtnow)
     #upload_companies()
-    upload_persons_base()
+    upload_persons_base(80)
     generate_persons_compare_file()
     load_kyc_companies()
     process_persons_files()
-    upload_persons_full(300)
-    # upload_avatars()
+    upload_persons_full(80)
+    upload_avatars()
 
